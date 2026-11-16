@@ -281,6 +281,9 @@
 
         function toggleShop(open) {
             document.getElementById('shop-modal').style.display = open ? 'flex' : 'none';
+            if (open) {
+                renderShop(); // Принудительно отрисовываем магазин при открытии
+            }
             isPaused = open;
         }
 
@@ -497,4 +500,5 @@
         draw();
     </script>
 </body>
-</html>
+    </html>
+    
