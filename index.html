@@ -1,12 +1,15 @@
 
-            
-<!DOCTYPE html>
+            <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Breakout</title>
     
+    <!-- Мобильный отладчик для поиска ошибок -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
+
     <!-- Yandex.Metrika counter -->
     <script type="text/javascript" >
        (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(f[i].a=f[i].a||[]).push(arguments)};
@@ -139,10 +142,6 @@
         .item-info .name {
             font-weight: bold;
             color: #fff;
-        }
-        .item-info .desc {
-            color: #8a9bb8;
-            font-size: 9px;
         }
         .buy-btn {
             background: #00f3ff;
@@ -278,7 +277,7 @@
         ];
 
         const boosts = [
-            { id: 'widePaddle', name: 'Широкая платформа', desc: '+30% к ширине платформы', price: 80 }
+            { id: 'widePaddle', name: 'Широкая платформа', desc: '+30% к ширине', price: 80 }
         ];
 
         function watchAd() {
@@ -348,7 +347,7 @@
         function buyBoost(id, price) {
             if (!playerData[id] && playerData.coins >= price) {
                 playerData.coins -= price;
-                playerData[id] = true;
+                playerData.id = true;
                 if (id === 'widePaddle') paddleWidth = playerWideWidth;
                 saveGame();
                 renderShop();
@@ -538,7 +537,4 @@
             drawBall();
             drawPaddle();
 
-            if (!isPaused) {
-                collisionDetection();
-
-    
+            if (!isPaused) 
