@@ -2,292 +2,123 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Breakout</title>
     <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            margin: 0;
-            padding: 0;
-            background: #05050f;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0b0f19;
             color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
         }
         canvas {
-            background: #09091a;
-            box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
-            display: block;
+            background: #111625;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            border: 2px solid #00f3ff;
+            border-radius: 8px;
+            touch-action: none;
+        }
+        #ui {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-family: sans-serif;
+            color: #00f3ff;
+            text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
         }
     </style>
+    <!-- Встроенная мобильная консоль для проверки ошибок -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 </head>
 <body>
-
-    <!-- HUD (Валюта и кнопка магазина) -->
-    <div style="position: fixed; top: 15px; right: 15px; z-index: 100; display: flex; gap: 10px; align-items: center;">
-        <div style="background: rgba(10, 10, 25, 0.85); border: 1px solid #00f3ff; color: #00f3ff; padding: 6px 14px; border-radius: 20px; font-weight: bold; box-shadow: 0 0 10px rgba(0, 243, 255, 0.4);">
-            💎 <span id="coin-count">0</span>
-        </div>
-        <button onclick="toggleShop()" style="background: linear-gradient(45deg, #ff007f, #7928ca); border: none; color: white; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 0 12px rgba(255, 0, 127, 0.6);">
-            🛒 Магазин
-        </button>
-    </div>
-
-    <!-- Модальное окно магазина -->
-    <div id="shop-modal" style="display: none; position: fixed; inset: 0; background: rgba(5, 5, 15, 0.95); z-index: 200; color: white; padding: 20px; overflow-y: auto; flex-direction: column; align-items: center;">
-        <div style="width: 100%; max-width: 360px; margin-top: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 style="margin: 0; color: #00f3ff; text-shadow: 0 0 10px #00f3ff;">НЕОН МАГАЗИН</h2>
-                <button onclick="toggleShop()" style="background: none; border: 1px solid #ff007f; color: #ff007f; font-size: 18px; width: 32px; height: 32px; border-radius: 50%; cursor: pointer;">✕</button>
-            </div>
-
-            <h3 style="color: #ff007f; font-size: 14px; text-transform: uppercase;">Скины платформы</h3>
-            <div id="skins-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 25px;"></div>
-
-            <h3 style="color: #00f3ff; font-size: 14px; text-transform: uppercase;">Бонусы на следующую игру</h3>
-            <div id="boosts-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 30px;"></div>
-        </div>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
+    <div id="ui">Счет: <span id="score">0</span></div>
+    <canvas id="gameCanvas" width="360" height="480"></canvas>
 
     <script>
-        // === СИСТЕМА ЭКОНОМИКИ И МАГАЗИНА ===
-        const GameEconomy = {
-            coins: parseInt(localStorage.getItem('nb_coins')) || 0,
-            unlockedSkins: JSON.parse(localStorage.getItem('nb_unlocked_skins')) || ['cyan'],
-            activeSkin: localStorage.getItem('nb_active_skin') || 'cyan',
-            activeBoosts: JSON.parse(localStorage.getItem('nb_boosts')) || { extraLife: false, widePaddle: false },
-
-            skins: [
-                { id: 'cyan', name: 'Классический Неон', color: '#00f3ff', price: 0 },
-                { id: 'pink', name: 'Киберпанк Розовый', color: '#ff007f', price: 50 },
-                { id: 'gold', name: 'Золотой Импульс', color: '#ffd700', price: 150 },
-                { id: 'matrix', name: 'Зелёная Матрица', color: '#00ff66', price: 300 }
-            ],
-
-            boosts: [
-                { id: 'extraLife', name: '❤️ +1 Жизнь на старт', desc: 'Дополнительная попытка в игре', price: 30 },
-                { id: 'widePaddle', name: '↔️ Широкая платформа', desc: '+30% к ширине платформы', price: 40 }
-            ],
-
-            save() {
-                localStorage.setItem('nb_coins', this.coins);
-                localStorage.setItem('nb_unlocked_skins', JSON.stringify(this.unlockedSkins));
-                localStorage.setItem('nb_active_skin', this.activeSkin);
-                localStorage.setItem('nb_boosts', JSON.stringify(this.activeBoosts));
-                this.updateUI();
-            },
-
-            addCoins(amount) {
-                this.coins += amount;
-                this.save();
-            },
-
-            buyOrSelectSkin(skinId) {
-                const skin = this.skins.find(s => s.id === skinId);
-                if (!skin) return;
-
-                if (this.unlockedSkins.includes(skinId)) {
-                    this.activeSkin = skinId;
-                } else if (this.coins >= skin.price) {
-                    this.coins -= skin.price;
-                    this.unlockedSkins.push(skinId);
-                    this.activeSkin = skinId;
-                } else {
-                    alert('Недостаточно кристаллов 💎!');
-                    return;
-                }
-                this.save();
-            },
-
-            buyBoost(boostId) {
-                const boost = this.boosts.find(b => b.id === boostId);
-                if (!boost || this.activeBoosts[boostId]) return;
-
-                if (this.coins >= boost.price) {
-                    this.coins -= boost.price;
-                    this.activeBoosts[boostId] = true;
-                    this.save();
-                } else {
-                    alert('Недостаточно кристаллов 💎!');
-                }
-            },
-
-            getCurrentColor() {
-                const skin = this.skins.find(s => s.id === this.activeSkin);
-                return skin ? skin.color : '#00f3ff';
-            },
-
-            updateUI() {
-                const coinEl = document.getElementById('coin-count');
-                if (coinEl) coinEl.innerText = this.coins;
-
-                const skinsContainer = document.getElementById('skins-list');
-                if (skinsContainer) {
-                    skinsContainer.innerHTML = '';
-                    this.skins.forEach(skin => {
-                        const isUnlocked = this.unlockedSkins.includes(skin.id);
-                        const isActive = this.activeSkin === skin.id;
-                        let btnText = isActive ? 'Выбрано' : (isUnlocked ? 'Выбрать' : `💎 ${skin.price}`);
-                        let btnColor = isActive ? '#28a745' : (isUnlocked ? '#00f3ff' : '#ff007f');
-
-                        skinsContainer.innerHTML += `
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.07); padding: 10px 14px; border-radius: 12px; border-left: 4px solid ${skin.color};">
-                                <div style="font-weight: bold; font-size: 14px;">${skin.name}</div>
-                                <button onclick="GameEconomy.buyOrSelectSkin('${skin.id}')" style="background: ${btnColor}; color: #000; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px;">
-                                    ${btnText}
-                                </button>
-                            </div>
-                        `;
-                    });
-                }
-
-                const boostsContainer = document.getElementById('boosts-list');
-                if (boostsContainer) {
-                    boostsContainer.innerHTML = '';
-                    this.boosts.forEach(boost => {
-                        const isBought = this.activeBoosts[boost.id];
-                        boostsContainer.innerHTML += `
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.07); padding: 10px 14px; border-radius: 12px;">
-                                <div style="padding-right: 10px;">
-                                    <div style="font-weight: bold; font-size: 14px;">${boost.name}</div>
-                                    <div style="font-size: 11px; color: #aaa;">${boost.desc}</div>
-                                </div>
-                                <button onclick="GameEconomy.buyBoost('${boost.id}')" ${isBought ? 'disabled' : ''} style="background: ${isBought ? '#444' : '#00f3ff'}; color: ${isBought ? '#aaa' : '#000'}; border: none; padding: 6px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; white-space: nowrap;">
-                                    ${isBought ? 'Активно' : `💎 ${boost.price}`}
-                                </button>
-                            </div>
-                        `;
-                    });
-                }
-            }
-        };
-
-        function toggleShop() {
-            const modal = document.getElementById('shop-modal');
-            modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
-            GameEconomy.updateUI();
-        }
-
-        GameEconomy.updateUI();
-
-
-        // === ОСНОВНОЙ ИГРОВОЙ КОД (NEON BREAKOUT) ===
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
-
-        function resizeCanvas() {
-            canvas.width = Math.min(window.innerWidth - 20, 400);
-            canvas.height = Math.min(window.innerHeight - 40, 600);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+        const scoreElement = document.getElementById("score");
 
         let score = 0;
-        let lives = 3;
+        let x = canvas.width / 2;
+        let y = canvas.height - 30;
+        let dx = 2;
+        let dy = -2;
+        const ballRadius = 8;
 
-        // Платформа
-        const paddle = {
-            width: 80,
-            height: 12,
-            x: canvas.width / 2 - 40,
-            y: canvas.height - 40,
-            dx: 6
-        };
+        const paddleHeight = 12;
+        const paddleWidth = 75;
+        let paddleX = (canvas.width - paddleWidth) / 2;
 
-        // Мяч
-        const ball = {
-            x: canvas.width / 2,
-            y: canvas.height - 60,
-            radius: 7,
-            speed: 4,
-            dx: 3,
-            dy: -3
-        ];
-
-        // Применение купленных бонусов при старте
-        function applyBoostsAtStart() {
-            if (GameEconomy.activeBoosts.extraLife) {
-                lives += 1;
-                GameEconomy.activeBoosts.extraLife = false;
-                GameEconomy.save();
-            }
-            if (GameEconomy.activeBoosts.widePaddle) {
-                paddle.width = 110; // Увеличенная платформа
-                GameEconomy.activeBoosts.widePaddle = false;
-                GameEconomy.save();
-            } else {
-                paddle.width = 80;
-            }
-        }
-        applyBoostsAtStart();
-
-        // Управление с клавиатуры и тачпада
         let rightPressed = false;
         let leftPressed = false;
 
-        document.addEventListener("keydown", (e) => {
+        document.addEventListener("keydown", keyDownHandler, false);
+        document.addEventListener("keyup", keyUpHandler, false);
+        document.addEventListener("mousemove", mouseMoveHandler, false);
+        document.addEventListener("touchmove", touchMoveHandler, { passive: false });
+        document.addEventListener("touchstart", touchMoveHandler, { passive: false });
+
+        function keyDownHandler(e) {
             if (e.key === "Right" || e.key === "ArrowRight") rightPressed = true;
             else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = true;
-        });
-        document.addEventListener("keyup", (e) => {
+        }
+
+        function keyUpHandler(e) {
             if (e.key === "Right" || e.key === "ArrowRight") rightPressed = false;
             else if (e.key === "Left" || e.key === "ArrowLeft") leftPressed = false;
-        });
+        }
 
-        canvas.addEventListener("mousemove", (e) => {
-            let relativeX = e.clientX - canvas.offsetLeft;
+        function mouseMoveHandler(e) {
+            const relativeX = e.clientX - canvas.offsetLeft;
             if (relativeX > 0 && relativeX < canvas.width) {
-                paddle.x = relativeX - paddle.width / 2;
-            }
-        });
-
-        canvas.addEventListener("touchmove", (e) => {
-            let relativeX = e.touches[0].clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddle.x = relativeX - paddle.width / 2;
-            }
-        }, { passive: true });
-
-        // Генерация блоков
-        const brickRowCount = 5;
-        const brickColumnCount = 6;
-        const brickWidth = 55;
-        const brickHeight = 18;
-        const brickPadding = 8;
-        const brickOffsetTop = 40;
-        const brickOffsetLeft = 20;
-
-        let bricks = [];
-        function initBricks() {
-            bricks = [];
-            for (let c = 0; c < brickColumnCount; c++) {
-                bricks[c] = [];
-                for (let r = 0; r < brickRowCount; r++) {
-                    bricks[c][r] = { x: 0, y: 0, status: 1 };
-                }
+                paddleX = relativeX - paddleWidth / 2;
             }
         }
-        initBricks();
+
+        function touchMoveHandler(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = canvas.getBoundingClientRect();
+            const relativeX = touch.clientX - rect.left;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
+            }
+        }
+
+        const brickRowCount = 4;
+        const brickColumnCount = 5;
+        const brickWidth = 60;
+        const brickHeight = 20;
+        const brickPadding = 10;
+        const brickOffsetTop = 30;
+        const brickOffsetLeft = 25;
+
+        const bricks = [];
+        for (let c = 0; c < brickColumnCount; c++) {
+            bricks[c] = [];
+            for (let r = 0; r < brickRowCount; r++) {
+                bricks[c][r] = { x: 0, y: 0, status: 1 };
+            }
+        }
 
         function collisionDetection() {
             for (let c = 0; c < brickColumnCount; c++) {
                 for (let r = 0; r < brickRowCount; r++) {
                     let b = bricks[c][r];
                     if (b.status === 1) {
-                        if (ball.x > b.x && ball.x < b.x + brickWidth && ball.y > b.y && ball.y < b.y + brickHeight) {
-                            ball.dy = -ball.dy;
+                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
+                            dy = -dy;
                             b.status = 0;
                             score += 10;
-                            GameEconomy.addCoins(1); // Начисление 1 кристалла за блок!
-
-                            // Проверка на победу
+                            scoreElement.innerText = score;
                             if (score === brickRowCount * brickColumnCount * 10) {
-                                alert("Победа! Уровень пройден!");
+                                alert("Победа!");
                                 document.location.reload();
                             }
                         }
@@ -298,21 +129,20 @@
 
         function drawBall() {
             ctx.beginPath();
-            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-            ctx.fillStyle = "#00f3ff";
+            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
+            ctx.fillStyle = "#ff007f";
             ctx.shadowBlur = 10;
-            ctx.shadowColor = "#00f3ff";
+            ctx.shadowColor = "#ff007f";
             ctx.fill();
             ctx.closePath();
         }
 
         function drawPaddle() {
             ctx.beginPath();
-            ctx.roundRect(paddle.x, paddle.y, paddle.width, paddle.height, 6);
-            const skinColor = GameEconomy.getCurrentColor();
-            ctx.fillStyle = skinColor;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = skinColor;
+            ctx.rect(paddleX, canvas.height - paddleHeight - 10, paddleWidth, paddleHeight);
+            ctx.fillStyle = "#00f3ff";
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = "#00f3ff";
             ctx.fill();
             ctx.closePath();
         }
@@ -325,13 +155,11 @@
                         let brickY = (r * (brickHeight + brickPadding)) + brickOffsetTop;
                         bricks[c][r].x = brickX;
                         bricks[c][r].y = brickY;
-                        
                         ctx.beginPath();
-                        ctx.roundRect(brickX, brickY, brickWidth, brickHeight, 4);
-                        const colors = ["#ff007f", "#7928ca", "#00f3ff", "#ff00ff", "#00ff66"];
-                        ctx.fillStyle = colors[r % colors.length];
+                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
+                        ctx.fillStyle = "#bd00ff";
                         ctx.shadowBlur = 8;
-                        ctx.shadowColor = ctx.fillStyle;
+                        ctx.shadowColor = "#bd00ff";
                         ctx.fill();
                         ctx.closePath();
                     }
@@ -339,66 +167,38 @@
             }
         }
 
-        function drawScore() {
-            ctx.font = "14px sans-serif";
-            ctx.fillStyle = "#fff";
-            ctx.shadowBlur = 0;
-            ctx.fillText("Счет: " + score, 20, 25);
-            ctx.fillText("Жизни: " + lives, canvas.width - 75, 25);
-        }
-
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBricks();
             drawBall();
             drawPaddle();
-            drawScore();
             collisionDetection();
 
-            // Движение мяча
-            ball.x += ball.dx;
-            ball.y += ball.dy;
-
-            // Стены (лево/право)
-            if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
-                ball.dx = -ball.dx;
+            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
+                dx = -dx;
             }
-            // Стены (верх)
-            if (ball.y - ball.radius < 0) {
-                ball.dy = -ball.dy;
-            } 
-            // Столкновение с платформой
-            else if (ball.y + ball.radius > paddle.y) {
-                if (ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
-                    let hitPoint = ball.x - (paddle.x + paddle.width / 2);
-                    ball.dx = hitPoint * 0.15;
-                    ball.dy = -ball.speed;
-                } else if (ball.y + ball.radius > canvas.height) {
-                    lives--;
-                    if (!lives) {
-                        alert("Игра окончена!");
-                        document.location.reload();
-                    } else {
-                        ball.x = canvas.width / 2;
-                        ball.y = canvas.height - 60;
-                        ball.dx = 3;
-                        ball.dy = -3;
-                        paddle.x = canvas.width / 2 - paddle.width / 2;
-                    }
+            if (y + dy < ballRadius) {
+                dy = -dy;
+            } else if (y + dy > canvas.height - ballRadius - 10) {
+                if (x > paddleX && x < paddleX + paddleWidth) {
+                    dy = -dy;
+                } else {
+                    alert("Игра окончена");
+                    document.location.reload();
                 }
             }
 
-            // Управление с клавиатуры
-            if (rightPressed && paddle.x < canvas.width - paddle.width) {
-                paddle.x += paddle.dx;
-            } else if (leftPressed && paddle.x > 0) {
-                paddle.x -= paddle.dx;
+            if (rightPressed && paddleX < canvas.width - paddleWidth) {
+                paddleX += 7;
+            } else if (leftPressed && paddleX > 0) {
+                paddleX -= 7;
             }
 
-            requestAnimationFrame(draw);
+            x += dx;
+            y += dy;
         }
 
-        draw();
+        setInterval(draw, 10);
     </script>
 </body>
 </html>
