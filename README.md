@@ -1,10 +1,16 @@
-<!DOCTYPE html>
+
+    
+                                    
+            <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Neon Breakout</title>
     
+    <!-- Подключаем официальный скрипт Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
@@ -127,6 +133,11 @@
     </div>
 
     <script>
+        // Инициализация Adsgram SDK с вашим Block ID (77610)
+        const adController = window.Adsgram.init({ 
+            blockId: "int-77610" 
+        });
+
         let playerData = {
             coins: parseInt(localStorage.getItem('nb_coins')) || 0,
             level: parseInt(localStorage.getItem('nb_level')) || 1,
@@ -163,11 +174,17 @@
             { id: 'widePaddle', name: 'Широкая платформа', desc: '+30% к ширине', price: 80 }
         ];
 
-        function watchAd() {
-            playerData.coins += 25;
-            saveGame();
-            renderShop();
-            alert("📺 Рекламный ролик завершен! Получено +25 💎");
+        // Функция показа рекламы с наградой через Adsgram
+        async function watchAd() {
+            try {
+                const result = await adController.show();
+                playerData.coins += 25;
+                saveGame();
+                renderShop();
+                console.log("Реклама успешно просмотрена:", result);
+            } catch (error) {
+                console.log("Реклама не была досмотрена:", error);
+            }
         }
 
         function renderShop() {
@@ -449,3 +466,4 @@
     </script>
 </body>
 </html>
+
