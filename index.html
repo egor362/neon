@@ -1,5 +1,789 @@
 
   
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101426">
+<title>NEON BREAKOUT</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js" defer></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js" defer></script>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#101426;color:#fff;
+ font-family:Arial,sans-serif;text-align:center;
+}
+header{padding:18px 8px;color:#00eaff;font-size:27px;font-weight:bold}
+.stats{display:flex;justify-content:space-around;padding:10px 2px;font-size:14px}
+canvas{
+ display:block;width:min(94vw,400px);height:auto;
+ margin:10px auto;background:#111d32;
+ border:2px solid #00dfff;border-radius:12px;
+ touch-action:none;
+}
+button{
+ background:#00dfff;color:#07101b;border:0;
+ border-radius:10px;padding:12px 14px;
+ margin:4px;font-size:14px;font-weight:bold;
+}
+button:disabled{opacity:.5}
+.panel{
+ width:min(94vw,400px);margin:12px auto;
+ padding:14px;background:#1a2740;border-radius:12px;
+ text-align:left;
+}
+.panel h2{text-align:center;color:#00eaff}
+.hidden{display:none}
+.item{
+ display:flex;justify-content:space-between;
+ align-items:center;gap:8px;padding:9px;
+ margin:7px 0;background:#263653;border-radius:9px;
+}
+.dot{display:inline-block;width:19px;height:19px;border-radius:50%;vertical-align:middle;margin-right:8px}
+#message{min-height:30px;color:#00eaff;padding:8px}
+.small{font-size:12px;color:#aabbd1}
+</style>
+</head>
+
+<body>
+
+<header>NEON BREAKOUT</header>
+
+<div class="stats">
+ <span>Уровень: <b id="level">1</b></span>
+ <span>Монеты: <b id="coins">0</b> 🪙</span>
+ <span>Жизни: <b id="lives">3</b> ❤️</span>
+</div>
+
+<canvas id="game" width="400" height="550"></canvas>
+
+<div id="message">Нажми «Играть»</div>
+
+<div>
+ <button id="play">Играть</button>
+ <button id="pause">Пауза</button>
+ <button id="sound">🔊 Звук ВКЛ</button>
+</div>
+
+<div>
+ <button id="shopBtn">🎨 Магазин</button>
+ <button id="tasksBtn">🏆 Задания</button>
+ <button id="adBtn">📺 Реклама +25 🪙</button>
+</div>
+
+<div class="panel">
+ <div>Рекорд на устройстве: <b id="best">0</b></div>
+ <p class="small">Общий рейтинг игроков появится после подключения сервера.</p>
+</div>
+
+<div class="panel hidden" id="shop">
+ <h2>🎨 МАГАЗИН СКИНОВ</h2>
+ <div id="skins"></div>
+ <button id="closeShop">Закрыть</button>
+</div>
+
+<div class="panel hidden" id="tasks">
+ <h2>🏆 ЗАДАНИЯ</h2>
+ <div id="taskList"></div>
+ <hr>
+ <h2>ДОСТИЖЕНИЯ</h2>
+ <div id="achievements"></div>
+ <button id="closeTasks">Закрыть</button>
+</div>
+
+<div class="panel">
+ <h2>🎁 БОНУСЫ</h2>
+ <p>↔ Увеличение платформы.</p>
+ <p>⏱ Замедление мяча.</p>
+ <p>❤️ Дополнительная жизнь.</p>
+ <p>🧲 Магнитный бонус.</p>
+ <p class="small">Бонусы иногда выпадают из разбитых блоков.</p>
+</div>
+
+<script>
+"use strict";
+
+/* ОСНОВНЫЕ ЭЛЕМЕНТЫ */
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+const message=document.getElementById("message");
+
+const $=id=>document.getElementById(id);
+
+/* TELEGRAM */
+
+try{
+ if(window.Telegram?.WebApp){
+  window.Telegram.WebApp.ready();
+  window.Telegram.WebApp.expand();
+ }
+}catch(e){}
+
+/* СОХРАНЕНИЕ */
+
+function readSave(){
+ try{
+  return JSON.parse(localStorage.getItem("neon_save"))||{};
+ }catch(e){return {}}
+}
+
+const saved=readSave();
+
+let coins=Number(saved.coins)||0;
+let best=Number(saved.best)||0;
+let selected=saved.selected||"blue";
+let unlocked=saved.unlocked||["blue"];
+let blocksBroken=Number(saved.blocksBroken)||0;
+let levelsPassed=Number(saved.levelsPassed)||0;
+let adsWatched=Number(saved.adsWatched)||0;
+let claimed=saved.claimed||[];
+
+function save(){
+ try{
+  localStorage.setItem("neon_save",JSON.stringify({
+   coins,best,selected,unlocked,
+   blocksBroken,levelsPassed,adsWatched,claimed
+  }));
+ }catch(e){}
+}
+
+/* СКИНЫ */
+
+const skins=[
+ {id:"blue",name:"Неон",color:"#00eaff",price:0},
+ {id:"red",name:"Огонь",color:"#ff405d",price:40},
+ {id:"green",name:"Изумруд",color:"#38ff91",price:60},
+ {id:"purple",name:"Космос",color:"#b56bff",price:80},
+ {id:"gold",name:"Золото",color:"#ffd447",price:120},
+ {id:"pink",name:"Розовый",color:"#ff65c5",price:150},
+ {id:"white",name:"Лёд",color:"#ffffff",price:180},
+ {id:"orange",name:"Закат",color:"#ff9d42",price:200},
+ {id:"cyan",name:"Лазурный",color:"#38aaff",price:220},
+ {id:"lime",name:"Лайм",color:"#c5ff42",price:250}
+];
+
+if(!skins.some(s=>s.id===selected))selected="blue";
+if(!unlocked.includes("blue"))unlocked.push("blue");
+
+function skinColor(){
+ return skins.find(s=>s.id===selected).color;
+}
+
+/* ЗВУК */
+
+let soundOn=true;
+let audio=null;
+
+function sound(freq=440,duration=.1,type="sine"){
+ if(!soundOn)return;
+
+ try{
+  const AC=window.AudioContext||window.webkitAudioContext;
+  if(!AC)return;
+
+  if(!audio)audio=new AC();
+  if(audio.state==="suspended")audio.resume();
+
+  const osc=audio.createOscillator();
+  const gain=audio.createGain();
+
+  osc.type=type;
+  osc.frequency.value=freq;
+  gain.gain.setValueAtTime(.1,audio.currentTime);
+  gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+duration);
+
+  osc.connect(gain);
+  gain.connect(audio.destination);
+  osc.start();
+  osc.stop(audio.currentTime+duration);
+ }catch(e){}
+}
+
+$("sound").onclick=()=>{
+ soundOn=!soundOn;
+ $("sound").textContent=soundOn?"🔊 Звук ВКЛ":"🔇 Звук ВЫКЛ";
+ if(soundOn)sound(600,.1);
+};
+
+/* СОСТОЯНИЕ ИГРЫ */
+
+let state="ready";
+let level=1;
+let lives=3;
+let score=0;
+
+const paddle={x:160,y:510,w:80,h:12};
+const ball={x:200,y:480,r:7,dx:3,dy:-4};
+
+let bricks=[];
+let falling=[];
+let effects={wide:0,slow:0,magnet:0};
+
+/* УРОВНИ */
+
+const patterns=[
+ ["111111","111111","111111"],
+ ["001100","011110","111111","111111"],
+ ["110011","110011","110011","110011"],
+ ["101010","010101","101010","010101","101010"],
+ ["111111","100001","111111","100001","111111"],
+ ["111111","111111","001100","001100","111111"],
+ ["100001","110011","111111","110011","100001"],
+ ["111111","101101","110011","101101","111111"],
+ ["111111","111111","101101","111111","111111"],
+ ["101101","111111","111111","111111","101101"]
+];
+
+function updateStats(){
+ $("level").textContent=level;
+ $("coins").textContent=coins;
+ $("lives").textContent=lives;
+ $("best").textContent=best;
+}
+
+function resetBall(){
+ ball.x=paddle.x+paddle.w/2;
+ ball.y=paddle.y-15;
+ let speed=3+Math.min(level*.12,2);
+ ball.dx=(Math.random()>.5?1:-1)*speed;
+ ball.dy=-speed;
+}
+
+function createLevel(){
+ bricks=[];
+ falling=[];
+ effects={wide:0,slow:0,magnet:0};
+ paddle.w=80;
+ paddle.x=160;
+
+ let pattern=patterns[(level-1)%patterns.length];
+ let bw=55,bh=20,gap=7;
+
+ pattern.forEach((line,r)=>{
+  for(let c=0;c<line.length;c++){
+   if(line[c]==="1"){
+    bricks.push({
+     x:14+c*(bw+gap),
+     y:65+r*(bh+gap),
+     w:bw,h:bh,alive:true
+    });
+   }
+  }
+ });
+
+ resetBall();
+ updateStats();
+}
+
+function startGame(){
+ level=1;
+ lives=3;
+ score=0;
+ state="playing";
+ createLevel();
+ message.textContent="Разбей все блоки!";
+ sound(500,.15);
+}
+
+function pauseGame(){
+ if(state==="playing"){
+  state="paused";
+  message.textContent="Пауза";
+ }else if(state==="paused"){
+  state="playing";
+  message.textContent="Игра продолжается";
+ }
+}
+
+/* УПРАВЛЕНИЕ */
+
+function movePaddle(clientX){
+ const rect=canvas.getBoundingClientRect();
+ const x=(clientX-rect.left)*400/rect.width;
+
+ paddle.x=Math.max(0,Math.min(400-paddle.w,x-paddle.w/2));
+
+ if(state==="ready"){
+  ball.x=paddle.x+paddle.w/2;
+ }
+}
+
+canvas.addEventListener("pointermove",e=>{
+ movePaddle(e.clientX);
+});
+
+canvas.addEventListener("pointerdown",e=>{
+ movePaddle(e.clientX);
+});
+
+document.addEventListener("keydown",e=>{
+ if(e.key==="ArrowLeft"||e.key.toLowerCase()==="a")paddle.x-=25;
+ if(e.key==="ArrowRight"||e.key.toLowerCase()==="d")paddle.x+=25;
+ paddle.x=Math.max(0,Math.min(400-paddle.w,paddle.x));
+});
+
+/* БОНУСЫ */
+
+const bonusTypes=["wide","slow","life","magnet"];
+
+function dropBonus(x,y){
+ const type=bonusTypes[Math.floor(Math.random()*bonusTypes.length)];
+ falling.push({x,y,type,dy:2});
+}
+
+function applyBonus(type){
+ if(type==="wide"){
+  paddle.w=125;
+  effects.wide=600;
+  message.textContent="↔ Платформа увеличена!";
+ }
+
+ if(type==="slow"){
+  effects.slow=600;
+  ball.dx*=.7;
+  ball.dy*=.7;
+  message.textContent="⏱ Мяч замедлен!";
+ }
+
+ if(type==="life"){
+  lives=Math.min(5,lives+1);
+  message.textContent="❤️ +1 жизнь!";
+ }
+
+ if(type==="magnet"){
+  effects.magnet=600;
+  message.textContent="🧲 Магнит включён!";
+ }
+
+ sound(850,.2);
+ updateStats();
+}
+
+/* ОБНОВЛЕНИЕ ИГРЫ */
+
+function update(){
+ if(state!=="playing")return;
+
+ for(const key in effects){
+  if(effects[key]>0){
+   effects[key]--;
+   if(effects[key]===0&&key==="wide")paddle.w=80;
+  }
+ }
+
+ let oldX=ball.x;
+ let oldY=ball.y;
+
+ ball.x+=ball.dx;
+ ball.y+=ball.dy;
+
+ if(ball.x-ball.r<0){
+  ball.x=ball.r;
+  ball.dx=Math.abs(ball.dx);
+  sound(300,.04);
+ }
+
+ if(ball.x+ball.r>400){
+  ball.x=400-ball.r;
+  ball.dx=-Math.abs(ball.dx);
+  sound(300,.04);
+ }
+
+ if(ball.y-ball.r<0){
+  ball.y=ball.r;
+  ball.dy=Math.abs(ball.dy);
+ }
+
+ /* ПЛАТФОРМА */
+
+ if(ball.dy>0&&
+    oldY+ball.r<=paddle.y&&
+    ball.y+ball.r>=paddle.y&&
+    ball.x>=paddle.x&&
+    ball.x<=paddle.x+paddle.w){
+
+  let hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);
+  ball.dy=-Math.abs(ball.dy);
+  ball.dx=hit*5;
+  ball.y=paddle.y-ball.r;
+
+  if(effects.magnet>0){
+   ball.dx*=.5;
+  }
+
+  sound(380,.07);
+ }
+
+ /* БЛОКИ */
+
+ for(const b of bricks){
+  if(!b.alive)continue;
+
+  let collision=
+   ball.x+ball.r>b.x&&
+   ball.x-ball.r<b.x+b.w&&
+   ball.y+ball.r>b.y&&
+   ball.y-ball.r<b.y+b.h;
+
+  if(collision){
+   b.alive=false;
+
+   if(oldY+ball.r<=b.y||oldY-ball.r>=b.y+b.h){
+    ball.dy*=-1;
+   }else{
+    ball.dx*=-1;
+   }
+
+   coins+=2;
+   score+=10;
+   blocksBroken++;
+
+   if(Math.random()<.2){
+    dropBonus(b.x+b.w/2,b.y);
+   }
+
+   sound(650,.08,"square");
+   save();
+   updateStats();
+   break;
+  }
+ }
+
+ /* ПАДАЮЩИЕ БОНУСЫ */
+
+ falling=falling.filter(item=>{
+  item.y+=item.dy;
+
+  if(item.y+10>=paddle.y&&
+     item.x>=paddle.x&&
+     item.x<=paddle.x+paddle.w){
+   applyBonus(item.type);
+   return false;
+  }
+
+  return item.y<560;
+ });
+
+ /* ПОТЕРЯ МЯЧА */
+
+ if(ball.y-ball.r>550){
+  lives--;
+  sound(160,.25,"sawtooth");
+  updateStats();
+
+  if(lives<=0){
+   state="over";
+   message.textContent="Игра окончена! Очки: "+score;
+
+   if(score>best)best=score;
+
+   save();
+   updateStats();
+  }else{
+   resetBall();
+   message.textContent="Осталось жизней: "+lives;
+  }
+
+  return;
+ }
+
+ /* СЛЕДУЮЩИЙ УРОВЕНЬ */
+
+ if(bricks.length&&bricks.every(b=>!b.alive)){
+  level++;
+  levelsPassed++;
+  coins+=20;
+
+  save();
+  createLevel();
+
+  message.textContent="Уровень пройден! +20 монет";
+  sound(850,.25);
+  renderTasks();
+ }
+}
+
+/* ОТРИСОВКА */
+
+function draw(){
+ ctx.clearRect(0,0,400,550);
+
+ ctx.fillStyle="#111d32";
+ ctx.fillRect(0,0,400,550);
+
+ /* БЛОКИ */
+
+ for(const b of bricks){
+  if(!b.alive)continue;
+
+  ctx.fillStyle=skinColor();
+  ctx.fillRect(b.x,b.y,b.w,b.h);
+
+  ctx.strokeStyle="rgba(255,255,255,.3)";
+  ctx.strokeRect(b.x,b.y,b.w,b.h);
+ }
+
+ /* ПЛАТФОРМА */
+
+ ctx.fillStyle=skinColor();
+ ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+
+ /* МЯЧ */
+
+ ctx.beginPath();
+ ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);
+ ctx.fillStyle="#fff";
+ ctx.fill();
+
+ /* БОНУСЫ */
+
+ const symbols={
+  wide:"↔",slow:"⏱",life:"♥",magnet:"M"
+ };
+
+ falling.forEach(item=>{
+  ctx.beginPath();
+  ctx.arc(item.x,item.y,12,0,Math.PI*2);
+  ctx.fillStyle="#ffd447";
+  ctx.fill();
+
+  ctx.fillStyle="#101426";
+  ctx.font="14px Arial";
+  ctx.textAlign="center";
+  ctx.fillText(symbols[item.type],item.x,item.y+5);
+ });
+
+ /* ЗАСТАВКА */
+
+ if(state!=="playing"){
+  ctx.fillStyle="rgba(0,0,0,.65)";
+  ctx.fillRect(0,0,400,550);
+
+  ctx.fillStyle="#fff";
+  ctx.font="bold 25px Arial";
+  ctx.textAlign="center";
+
+  let label=state==="paused"?"ПАУЗА":
+   state==="over"?"ИГРА ОКОНЧЕНА":"NEON BREAKOUT";
+
+  ctx.fillText(label,200,270);
+ }
+}
+
+function loop(){
+ update();
+ draw();
+ requestAnimationFrame(loop);
+}
+
+/* МАГАЗИН */
+
+function renderShop(){
+ const list=$("skins");
+ list.innerHTML="";
+
+ skins.forEach(s=>{
+  const owned=unlocked.includes(s.id);
+  const chosen=selected===s.id;
+
+  const item=document.createElement("div");
+  item.className="item";
+
+  const name=document.createElement("span");
+  const dot=document.createElement("span");
+
+  dot.className="dot";
+  dot.style.background=s.color;
+
+  name.append(dot,document.createTextNode(s.name));
+
+  const btn=document.createElement("button");
+
+  if(chosen){
+   btn.textContent="Выбран";
+   btn.disabled=true;
+  }else if(owned){
+   btn.textContent="Использовать";
+   btn.onclick=()=>{
+    selected=s.id;
+    save();
+    renderShop();
+   };
+  }else{
+   btn.textContent=s.price+" 🪙";
+
+   btn.onclick=()=>{
+    if(coins<s.price){
+     message.textContent="Недостаточно монет!";
+     return;
+    }
+
+    coins-=s.price;
+    unlocked.push(s.id);
+    selected=s.id;
+
+    save();
+    updateStats();
+    renderShop();
+   };
+  }
+
+  item.append(name,btn);
+  list.appendChild(item);
+ });
+}
+
+/* ЗАДАНИЯ */
+
+function renderTasks(){
+ const list=$("taskList");
+ const achievements=$("achievements");
+
+ list.innerHTML="";
+ achievements.innerHTML="";
+
+ const tasksData=[
+  {id:"b",name:"Разбей 20 блоков",goal:20,value:blocksBroken,reward:30},
+  {id:"l",name:"Пройди 3 уровня",goal:3,value:levelsPassed,reward:50},
+  {id:"a",name:"Посмотри рекламу",goal:1,value:adsWatched,reward:25}
+ ];
+
+ tasksData.forEach(t=>{
+  const item=document.createElement("div");
+  item.className="item";
+
+  const text=document.createElement("span");
+  text.textContent=t.name+" ("+Math.min(t.value,t.goal)+"/"+t.goal+")";
+
+  const btn=document.createElement("button");
+
+  if(claimed.includes(t.id)){
+   btn.textContent="Получено";
+   btn.disabled=true;
+  }else if(t.value>=t.goal){
+   btn.textContent="Забрать "+t.reward+" 🪙";
+
+   btn.onclick=()=>{
+    coins+=t.reward;
+    claimed.push(t.id);
+    save();
+    updateStats();
+    renderTasks();
+   };
+  }else{
+   btn.textContent="В процессе";
+   btn.disabled=true;
+  }
+
+  item.append(text,btn);
+  list.appendChild(item);
+ });
+
+ const achievementsData=[
+  ["Первый блок",blocksBroken>=1],
+  ["100 блоков",blocksBroken>=100],
+  ["Три уровня",levelsPassed>=3],
+  ["Коллекционер",unlocked.length>=5]
+ ];
+
+ achievementsData.forEach(a=>{
+  const item=document.createElement("div");
+  item.className="item";
+  item.textContent=(a[1]?"🏆 ":"🔒 ")+a[0];
+  achievements.appendChild(item);
+ });
+}
+
+/* ADSGRAM */
+
+const ADSGRAM_BLOCK_ID="60295";
+let adController=null;
+let adBusy=false;
+
+$("adBtn").onclick=async()=>{
+ if(adBusy)return;
+
+ adBusy=true;
+ $("adBtn").disabled=true;
+ $("adBtn").textContent="Загрузка...";
+
+ try{
+  if(!window.Adsgram){
+   throw new Error("SDK AdsGram ещё не загрузился");
+  }
+
+  if(!adController){
+   adController=window.Adsgram.init({
+    blockId:ADSGRAM_BLOCK_ID
+   });
+  }
+
+  await adController.show();
+
+  // Успешное завершение Reward-просмотра
+  coins+=25;
+  adsWatched++;
+
+  save();
+  updateStats();
+  renderTasks();
+
+  message.textContent="🎉 Получено 25 монет!";
+  sound(900,.2);
+
+ }catch(error){
+  console.log("AdsGram:",error);
+  message.textContent="Реклама недоступна или просмотр не завершён.";
+ }finally{
+  adBusy=false;
+  $("adBtn").disabled=false;
+  $("adBtn").textContent="📺 Реклама +25 🪙";
+ }
+};
+
+/* КНОПКИ */
+
+$("play").onclick=startGame;
+$("pause").onclick=pauseGame;
+
+$("shopBtn").onclick=()=>{
+ $("shop").classList.remove("hidden");
+ if(state==="playing")state="paused";
+ renderShop();
+};
+
+$("closeShop").onclick=()=>{
+ $("shop").classList.add("hidden");
+ if(state==="paused")state="playing";
+};
+
+$("tasksBtn").onclick=()=>{
+ $("tasks").classList.remove("hidden");
+ if(state==="playing")state="paused";
+ renderTasks();
+};
+
+$("closeTasks").onclick=()=>{
+ $("tasks").classList.add("hidden");
+ if(state==="paused")state="playing";
+};
+
+/* ЗАПУСК */
+
+createLevel();
+updateStats();
+renderTasks();
+loop();
+
+</script>
+</body>
+</html>
+
 
 
   
