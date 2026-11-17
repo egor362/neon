@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>NEON BLOCKS</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #090d18;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  overflow-x: hidden;
+}
+
+header {
+  padding: 18px 10px;
+  font-size: 27px;
+  font-weight: bold;
+  color: #00eaff;
+  letter-spacing: 3px;
+}
+
+.info {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px;
+  font-size: 15px;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  margin: 5px;
+  background: #00cfe8;
+  color: #06121a;
+  font-weight: bold;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+button:active {
+  transform: scale(.96);
+}
+
+button:disabled {
+  opacity: .45;
+}
+
+canvas {
+  display: block;
+  width: min(94vw, 420px);
+  height: auto;
+  margin: 12px auto;
+  background: #101a2b;
+  border: 2px solid #00cfe8;
+  border-radius: 12px;
+  touch-action: none;
+}
+
+.panel {
+  margin: 12px auto;
+  padding: 15px;
+  width: min(94vw, 420px);
+  background: #131e30;
+  border: 1px solid #263c58;
+  border-radius: 12px;
+}
+
+.hidden {
+  display: none;
+}
+
+.skin {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  margin: 8px 0;
+  background: #1c2b42;
+  border-radius: 9px;
+}
+
+.skin-color {
+  display: inline-block;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+#message {
+  min-height: 25px;
+  color: #00eaff;
+  padding: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<header>NEON BLOCKS</header>
+
+<div class="info">
+  <span>⭐ Уровень: <b id="level">1</b></span>
+  <span>🪙 Монеты: <b id="coins">0</b></span>
+  <span>❤️ Жизни: <b id="lives">3</b></span>
+</div>
+
+<canvas id="game" width="400" height="550"></canvas>
+
+<div id="message">Нажми «Играть», чтобы начать!</div>
+
+<div>
+  <button onclick="startGame()">Играть</button>
+  <button onclick="togglePause()">Пауза</button>
+  <button onclick="openShop()">Магазин</button>
+</div>
+
+<div class="panel hidden" id="shop">
+  <h2>🎨 МАГАЗИН СКИНОВ</h2>
+  <p style="margin:10px">Покупай скины за монеты и используй их в игре.</p>
+  <div id="skinList"></div>
+  <button onclick="closeShop()">Назад в игру</button>
+</div>
+
+<div class="panel">
+  <b>Управление</b>
+  <p style="margin-top:8px">
+    Двигай платформу пальцем или мышкой.<br>
+    Разбивай блоки и проходи уровни!
+  </p>
+</div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  tg.ready();
+  tg.expand();
+}
+
+// ---------- СОХРАНЕНИЕ ----------
+
+function loadData() {
+  try {
+    return JSON.parse(localStorage.getItem("neon_blocks_save")) || {};
+  } catch(e) {
+    return {};
+  }
+}
+
+let saved = loadData();
+
+let coins = Number(saved.coins) || 0;
+let unlocked = Array.isArray(saved.unlocked) ? saved.unlocked : ["blue"];
+let selectedSkin = saved.selectedSkin || "blue";
+let bestLevel = Number(saved.bestLevel) || 1;
+
+function saveData() {
+  try {
+    localStorage.setItem("neon_blocks_save", JSON.stringify({
+      coins,
+      unlocked,
+      selectedSkin,
+      bestLevel
+    }));
+  } catch(e) {}
+}
+
+const skins = [
+  {id:"blue", name:"Неон", color:"#00eaff", price:0},
+  {id:"red", name:"Огонь", color:"#ff405d", price:50},
+  {id:"green", name:"Изумруд", color:"#38ff91", price:100},
+  {id:"purple", name:"Космос", color:"#b56bff", price:150},
+  {id:"gold", name:"Золото", color:"#ffd447", price:250}
+];
+
+// ---------- ИГРА ----------
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const W = canvas.width;
+const H = canvas.height;
+
+let level = 1;
+let lives = 3;
+let score = 0;
+
+let running = false;
+let paused = false;
+let gameOver = false;
+
+let paddle = {
+  x: 160,
+  y: 510,
+  w: 80,
+  h: 12,
+  speed: 7
+};
+
+let ball = {
+  x: 200,
+  y: 470,
+  r: 7,
+  dx: 3,
+  dy: -4
+};
+
+let bricks = [];
+
+const patterns = [
+  // Уровень 1 — обычная стена
+  [
+    "111111",
+    "111111",
+    "111111"
+  ],
+
+  // Уровень 2 — пирамида
+  [
+    "001100",
+    "011110",
+    "111111",
+    "111111"
+  ],
+
+  // Уровень 3 — две башни
+  [
+    "110011",
+    "110011",
+    "110011",
+    "110011"
+  ],
+
+  // Уровень 4 — шахматная доска
+  [
+    "101010",
+    "010101",
+    "101010",
+    "010101",
+    "101010"
+  ],
+
+  // Уровень 5 — крепость
+  [
+    "111111",
+    "100001",
+    "111111",
+    "100001",
+    "111111"
+  ]
+];
+
+function createLevel() {
+  bricks = [];
+
+  let pattern = patterns[(level - 1) % patterns.length];
+
+  const cols = 6;
+  const brickW = 55;
+  const brickH = 19;
+  const gap = 7;
+  const startX = 14;
+  const startY = 65;
+
+  pattern.forEach((row, r) => {
+    for (let c = 0; c < cols; c++) {
+      if (row[c] === "1") {
+        bricks.push({
+          x: startX + c * (brickW + gap),
+          y: startY + r * (brickH + gap),
+          w: brickW,
+          h: brickH,
+          alive: true
+        });
+      }
+    }
+  });
+
+  resetBall();
+  updateInfo();
+}
+
+function resetBall() {
+  ball.x = paddle.x + paddle.w / 2;
+  ball.y = paddle.y - 15;
+  ball.dx = 3 * (Math.random() > .5 ? 1 : -1);
+  ball.dy = -4;
+}
+
+// ---------- ОТРИСОВКА ----------
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Фон
+  ctx.fillStyle = "#101a2b";
+  ctx.fillRect(0, 0, W, H);
+
+  // Блоки
+  bricks.forEach((b, i) => {
+    if (!b.alive) return;
+
+    const skin = skins.find(s => s.id === selectedSkin);
+    ctx.fillStyle = skin ? skin.color : "#00eaff";
+
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = 8;
+
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.shadowBlur = 0;
+  });
+
+  // Платформа
+  const skin = skins.find(s => s.id === selectedSkin);
+  ctx.fillStyle = skin ? skin.color : "#00eaff";
+  ctx.shadowColor = ctx.fillStyle;
+  ctx.shadowBlur = 15;
+  ctx.fillRect(paddle.x, paddle.y, paddle.w, paddle.h);
+  ctx.shadowBlur = 0;
+
+  // Мяч
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, ball.r, 0, Math.PI * 2);
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "#ffffff";
+  ctx.shadowBlur = 12;
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Надпись
+  if (!running && !gameOver) {
+    ctx.fillStyle = "white";
+    ctx.font = "bold 20px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("NEON BLOCKS", W / 2, 300);
+  }
+
+  if (paused) {
+    ctx.fillStyle = "rgba(0,0,0,.6)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "white";
+    ctx.font = "bold 30px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("ПАУЗА", W / 2, H / 2);
+  }
+
+  if (gameOver) {
+    ctx.fillStyle = "rgba(0,0,0,.7)";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#ff405d";
+    ctx.font = "bold 28px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("ИГРА ОКОНЧЕНА", W / 2, H / 2);
+  }
+}
+
+// ---------- ФИЗИКА ----------
+
+function update() {
+  if (!running || paused || gameOver) return;
+
+  ball.x += ball.dx;
+  ball.y += ball.dy;
+
+  // Стены
+  if (ball.x - ball.r < 0 || ball.x + ball.r > W) {
+    ball.dx *= -1;
+  }
+
+  if (ball.y - ball.r < 0) {
+    ball.dy *= -1;
+  }
+
+  // Платформа
+  if (
+    ball.dy > 0 &&
+    ball.y + ball.r >= paddle.y &&
+    ball.y - ball.r <= paddle.y + paddle.h &&
+    ball.x >= paddle.x &&
+    ball.x <= paddle.x + paddle.w
+  ) {
+    let hit = (ball.x - (paddle.x + paddle.w / 2)) / (paddle.w / 2);
+
+    ball.dx = hit * 5;
+    ball.dy = -Math.max(3, Math.abs(ball.dy));
+  }
+
+  // Блоки
+  bricks.forEach(b => {
+    if (!b.alive) return;
+
+    if (
+      ball.x + ball.r > b.x &&
+      ball.x - ball.r < b.x + b.w &&
+      ball.y + ball.r > b.y &&
+      ball.y - ball.r < b.y + b.h
+    ) {
+      b.alive = false;
+      ball.dy *= -1;
+
+      coins += 2;
+      score += 10;
+
+      saveData();
+      updateInfo();
+    }
+  });
+
+  // Мяч упал
+  if (ball.y > H) {
+    lives--;
+    updateInfo();
+
+    if (lives <= 0) {
+      endGame();
+    } else {
+      resetBall();
+    }
+  }
+
+  // Уровень пройден
+  if (bricks.every(b => !b.alive)) {
+    level++;
+    bestLevel = Math.max(bestLevel, level);
+    coins += 20;
+
+    saveData();
+    createLevel();
+
+    document.getElementById("message").textContent =
+      "🎉 Уровень пройден! +20 монет";
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+loop();
+
+// ---------- УПРАВЛЕНИЕ ----------
+
+function movePaddle(x) {
+  const rect = canvas.getBoundingClientRect();
+  const scale = W / rect.width;
+
+  let position = (x - rect.left) * scale;
+
+  paddle.x = position - paddle.w / 2;
+  paddle.x = Math.max(0, Math.min(W - paddle.w, paddle.x));
+}
+
+canvas.addEventListener("pointermove", e => {
+  movePaddle(e.clientX);
+});
+
+canvas.addEventListener("pointerdown", e => {
+  movePaddle(e.clientX);
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowLeft") {
+    paddle.x -= 25;
+  }
+
+  if (e.key === "ArrowRight") {
+    paddle.x += 25;
+  }
+
+  paddle.x = Math.max(0, Math.min(W - paddle.w, paddle.x));
+});
+
+// ---------- КНОПКИ ----------
+
+function startGame() {
+  level = 1;
+  lives = 3;
+  score = 0;
+  gameOver = false;
+  paused = false;
+  running = true;
+
+  paddle.x = 160;
+  createLevel();
+
+  document.getElementById("message").textContent = "Игра началась!";
+}
+
+function togglePause() {
+  if (!running || gameOver) return;
+
+  paused = !paused;
+
+  document.getElementById("message").textContent =
+    paused ? "Игра на паузе" : "Продолжаем!";
+}
+
+function endGame() {
+  running = false;
+  gameOver = true;
+
+  document.getElementById("message").textContent =
+    "Игра окончена. Нажми «Играть», чтобы начать заново.";
+}
+
+// ---------- ИНФОРМАЦИЯ ----------
+
+function updateInfo() {
+  document.getElementById("level").textContent = level;
+  document.getElementById("coins").textContent = coins;
+  document.getElementById("lives").textContent = lives;
+}
+
+// ---------- МАГАЗИН ----------
+
+function openShop() {
+  paused = true;
+  document.getElementById("shop").classList.remove("hidden");
+  renderShop();
+}
+
+function closeShop() {
+  document.getElementById("shop").classList.add("hidden");
+  paused = false;
+}
+
+function renderShop() {
+  const list = document.getElementById("skinList");
+  list.innerHTML = "";
+
+  skins.forEach(skin => {
+    const owned = unlocked.includes(skin.id);
+    const selected = selectedSkin === skin.id;
+
+    const item = document.createElement("div");
+    item.className = "skin";
+
+    const left = document.createElement("span");
+
+    const dot = document.createElement("span");
+    dot.className = "skin-color";
+    dot.style.background = skin.color;
+
+    left.appendChild(dot);
+    left.appendChild(document.createTextNode(skin.name));
+
+    const button = document.createElement("button");
+
+    if (selected) {
+      button.textContent = "Выбран";
+      button.disabled = true;
+    } else if (owned) {
+      button.textContent = "Использовать";
+      button.onclick = () => selectSkin(skin.id);
+    } else {
+      button.textContent = skin.price + " 🪙";
+      button.onclick = () => buySkin(skin.id);
+    }
+
+    item.appendChild(left);
+    item.appendChild(button);
+    list.appendChild(item);
+  });
+}
+
+function buySkin(id) {
+  const skin = skins.find(s => s.id === id);
+
+  if (!skin || unlocked.includes(id)) return;
+
+  if (coins < skin.price) {
+    alert("Недостаточно монет!");
+    return;
+  }
+
+  coins -= skin.price;
+  unlocked.push(id);
+
+  saveData();
+  updateInfo();
+  renderShop();
+
+  alert("Скин куплен!");
+}
+
+function selectSkin(id) {
+  if (!unlocked.includes(id)) return;
+
+  selectedSkin = id;
+
+  saveData();
+  renderShop();
+  draw();
+}
+
+// ---------- ЗАПУСК ----------
+
+createLevel();
+updateInfo();
+
+</script>
+</body>
+  </html>
