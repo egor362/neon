@@ -426,3 +426,145 @@ function loadSave() {
   }
 }
   <canvas id="gameCanvas"></canvas>
+function saveData() {
+  try {
+    localStorage.setItem("riftRunnerSave",JSON.stringify(save));
+  } catch(e) {
+    console.warn("Не удалось сохранить прогресс",e);
+  }
+}
+
+loadSave();
+
+/* ЭЛЕМЕНТЫ */
+
+const $=id=>document.getElementById(id);
+
+const screens=[
+  "menuScreen","shipsScreen","worldsScreen",
+  "shopScreen","statsScreen","casesScreen","inventoryScreen","gameScreen"
+];
+
+function showScreen(name) {
+  screens.forEach(id=>$(id).classList.add("hidden"));
+  $(name).classList.remove("hidden");
+  $("resultModal").classList.add("hidden");
+  $("pauseModal").classList.add("hidden");
+  updateUI();
+}
+
+function toast(message) {
+  const el=$("toast");
+  el.textContent=message;
+  el.style.display="block";
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>el.style.display="none",2600);
+}
+
+function unlockedWorldCount() {
+  return WORLDS.filter(w=>save.best>=w.need).length;
+}
+
+function updateUI() {
+  $("crystals").textContent=save.crystals;
+  $("shopCrystals").textContent=save.crystals;
+  $("bestScore").textContent=save.best;
+  $("statsBest").textContent=save.best;
+  $("statsEarned").textContent=save.totalEarned;
+  $("statsWorlds").textContent=unlockedWorldCount();
+  $("statsShips").textContent=save.ownedShips.length;
+  $("menuShip").textContent=SHIPS[save.selectedShip]?.emoji||"🚀";
+  if($("shardsCount")) $("shardsCount").textContent=save.shards;
+  if($("collectorLevel")) $("collectorLevel").textContent=save.collectorLevel;
+}
+
+/* КОРАБЛИ */
+
+function renderShips() {
+  const list=$("shipsList");
+  list.innerHTML="";
+
+  SHIPS.forEach(ship=>{
+    const owned=save.ownedShips.includes(ship.id);
+    const selected=save.selectedShip===ship.id;
+
+    const card=document.createElement("div");
+    card.className="item"+(selected?" selected":"");
+
+    card.innerHTML=`
+      <div class="emoji">${ship.emoji}</div>
+      <div class="name">${ship.name}</div>
+      <div class="desc">${ship.desc}</div>
+      <div class="pill">${owned?(selected?"Выбран":"Куплен"):"💎 "+ship.price}</div>
+      <button class="secondary" style="width:100%">
+        ${owned?(selected?"Выбран":"Выбрать"):"Купить"}
+      </button>
+    `;
+
+    card.querySelector("button").addEventListener("click",()=>{
+      if(owned) {
+        save.selectedShip=ship.id;
+        saveData();
+        renderShips();
+        updateUI();
+        toast("Корабль выбран!");
+        return;
+      }
+
+      if(save.crystals<ship.price) {
+        toast("Недостаточно кристаллов");
+        return;
+      }
+
+      save.crystals-=ship.price;
+      save.ownedShips.push(ship.id);
+      save.selectedShip=ship.id;
+      saveData();
+      renderShips();
+      updateUI();
+      toast("Новый корабль куплен!");
+    });
+
+    list.appendChild(card);
+  });
+}
+
+/* МИРЫ */
+
+function renderWorlds() {
+  const list=$("worldsList");
+  list.innerHTML="";
+
+  WORLDS.forEach(world=>{
+    const unlocked=save.best>=world.need;
+    const selected=save.selectedWorld===world.id;
+
+    const card=document.createElement("div");
+    card.className="item"+(selected?" selected":"");
+
+    card.innerHTML=`
+      <div class="emoji">${world.emoji}</div>
+      <div class="name">${world.name}</div>
+      <div class="desc">${unlocked?"Мир доступен":"Нужно очков: "+world.need}</div>
+      <div class="pill">${unlocked?(selected?"Выбран":"Открыт"):"🔒 Закрыт"}</div>
+      <button class="secondary" style="width:100%" ${unlocked?"":"disabled"}>
+        ${selected?"Выбран":unlocked?"Выбрать":"Закрыт"}
+      </button>
+    `;
+
+    card.querySelector("button").addEventListener("click",()=>{
+      if(!unlocked) return;
+      save.selectedWorld=world.id;
+      saveData();
+      renderWorlds();
+      toast("Мир выбран!");
+    });
+
+    list.appendChild(card);
+  });
+}
+
+/* КЕЙСЫ И КОЛЛЕКЦИЯ */
+
+function rarityBadge(item){
+  const r=RARITIES[item.rarity]||RARITIES.common;
