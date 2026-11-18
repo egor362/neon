@@ -854,3 +854,146 @@ function movePlayer(direction) {
 function movePlayerVertical(direction) {
   if(!game.running || game.paused) return;
   game.playerY=Math.max(0.12,Math.min(0.85,game.playerY+direction*0.09));
+  }
+
+/* УПРАВЛЕНИЕ КНОПКАМИ */
+
+const controlButtons=[
+  ["leftButton","left"],
+  ["rightButton","right"],
+  ["upButton","up"],
+  ["downButton","down"]
+];
+
+controlButtons.forEach(([id,direction])=>{
+  const button=$(id);
+
+  button.addEventListener("pointerdown",e=>{
+    e.preventDefault();
+    game.keys[direction]=true;
+  });
+
+  ["pointerup","pointerleave","pointercancel"].forEach(event=>{
+    button.addEventListener(event,()=>{
+      game.keys[direction]=false;
+    });
+  });
+});
+  /* КЛАВИАТУРА */
+
+window.addEventListener("keydown",e=>{
+  if($("gameScreen").classList.contains("hidden")) return;
+
+  const keys={
+    ArrowLeft:"left",
+    ArrowRight:"right",
+    ArrowUp:"up",
+    ArrowDown:"down",
+    a:"left",
+    d:"right",
+    w:"up",
+    s:"down"
+  };
+
+  const direction=keys[e.key];
+  if(direction){
+    e.preventDefault();
+    game.keys[direction]=true;
+  }
+});
+
+window.addEventListener("keyup",e=>{
+  const keys={
+    ArrowLeft:"left",
+    ArrowRight:"right",
+    ArrowUp:"up",
+    ArrowDown:"down",
+    a:"left",
+    d:"right",
+    w:"up",
+    s:"down"
+  };
+
+  const direction=keys[e.key];
+  if(direction) game.keys[direction]=false;
+});
+
+window.addEventListener("blur",()=>{
+  game.keys={left:false,right:false,up:false,down:false};
+});
+
+/* УПРАВЛЕНИЕ КАСАНИЕМ */
+
+let canvasPointerActive=false;
+
+function moveToPointer(e){
+  const rect=canvas.getBoundingClientRect();
+
+  game.playerX=Math.max(0.08,Math.min(0.92,
+    (e.clientX-rect.left)/rect.width
+  ));
+
+  game.playerY=Math.max(0.12,Math.min(0.85,
+    (e.clientY-rect.top)/rect.height
+  ));
+}
+
+canvas.addEventListener("pointerdown",e=>{
+  if(!game.running || game.paused) return;
+  canvasPointerActive=true;
+  moveToPointer(e);
+});
+
+canvas.addEventListener("pointermove",e=>{
+  if(canvasPointerActive && game.running && !game.paused){
+    moveToPointer(e);
+  }
+});
+
+["pointerup","pointercancel","lostpointercapture"].forEach(event=>{
+  canvas.addEventListener(event,()=>{
+    canvasPointerActive=false;
+  });
+});
+
+/* СОЗДАНИЕ ОБЪЕКТОВ */
+
+function spawnObject(){
+  const isCrystal=Math.random()<0.32;
+
+  game.objects.push({
+    type:isCrystal?"crystal":"rock",
+    x:Math.random()*(canvasWidth-50)+25,
+    y:-30,
+    size:isCrystal?12:18,
+    speed:150+Math.random()*65+game.score*0.25
+  });
+}
+
+/* ДВИЖЕНИЕ И СТОЛКНОВЕНИЯ */
+
+function updateGame(dt){
+  const moveSpeed=0.65;
+
+  if(game.keys.left) game.playerX-=moveSpeed*dt;
+  if(game.keys.right) game.playerX+=moveSpeed*dt;
+  if(game.keys.up) game.playerY-=moveSpeed*dt;
+  if(game.keys.down) game.playerY+=moveSpeed*dt;
+
+  game.playerX=Math.max(0.08,Math.min(0.92,game.playerX));
+  game.playerY=Math.max(0.12,Math.min(0.85,game.playerY));
+
+  game.score+=dt*10;
+  game.spawn+=dt;
+
+  const spawnDelay=Math.max(0.38,0.9-game.score/1800);
+
+  if(game.spawn>=spawnDelay){
+    game.spawn=0;
+    spawnObject();
+  }
+
+  const px=game.playerX*canvasWidth;
+  const py=game.playerY*canvasHeight;
+
+  for(let i=game.objects.length-1;i>=0;i--){
