@@ -1,2 +1,899 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#080b19">
+<title>RIFT RUNNER 2.2</title>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    margin: 0;
+    background: #080b19;
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+    user-select: none;
+}
+
+button {
+    border: 0;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 12px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #7b35ff, #00bfff);
+}
+
+button:active {
+    transform: scale(.96);
+}
+
+button:disabled {
+    opacity: .4;
+}
+
+#app {
+    width: 100%;
+    height: 100dvh;
+    position: relative;
+    overflow: hidden;
+    background:
+        radial-gradient(ellipse at 50% 30%, #17234c 0%, #080b19 65%);
+}
+
+.screen {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+    overflow-y: auto;
+}
+
+.screen.active {
+    display: flex;
+}
+
+.logo {
+    font-size: clamp(35px, 10vw, 60px);
+    font-weight: 1000;
+    letter-spacing: 3px;
+    text-align: center;
+    color: #fff;
+    text-shadow: 0 0 15px #00c8ff, 0 0 35px #853bff;
+}
+
+.subtitle {
+    color: #8fa8d9;
+    letter-spacing: 4px;
+    margin: 8px 0 35px;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    width: min(280px, 90%);
+}
+
+.secondary {
+    background: #202b49;
+}
+
+.stats {
+    color: #9fb4e7;
+    margin: 12px;
+    text-align: center;
+}
+
+.topbar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.topbar button {
+    pointer-events: auto;
+    padding: 10px 14px;
+    background: #202b49dd;
+}
+
+#gameCanvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+}
+
+.game-info {
+    position: absolute;
+    top: 72px;
+    left: 15px;
+    right: 15px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 0 2px 5px #000;
+    z-index: 2;
+}
+
+.panel {
+    width: min(430px, 100%);
+    background: #111a31ee;
+    border: 1px solid #344a79;
+    border-radius: 20px;
+    padding: 20px;
+    text-align: center;
+    margin: auto;
+}
+
+.panel h2 {
+    margin-top: 0;
+    color: #75dfff;
+}
+
+.ship-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+
+.ship {
+    background: #1a2745;
+    border: 1px solid #344c7c;
+    border-radius: 14px;
+    padding: 15px 8px;
+    text-align: center;
+}
+
+.ship.selected {
+    border: 2px solid #00d9ff;
+    background: #20385c;
+}
+
+.ship-icon {
+    font-size: 35px;
+    margin-bottom: 8px;
+}
+
+.ship small {
+    color: #9eb1da;
+}
+
+.ship button {
+    padding: 9px;
+    margin-top: 9px;
+    width: 100%;
+    font-size: 13px;
+}
+
+.world-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.world {
+    padding: 14px;
+    border: 1px solid #344c7c;
+    border-radius: 12px;
+    background: #1a2745;
+    text-align: left;
+}
+
+.world.selected {
+    border: 2px solid #00d9ff;
+}
+
+#gameOver h2 {
+    color: #ff6d9e;
+}
+
+#toast {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #18294b;
+    border: 1px solid #4b6da8;
+    border-radius: 12px;
+    padding: 12px 20px;
+    z-index: 20;
+    display: none;
+    white-space: nowrap;
+}
+
+@media (max-height: 650px) {
+    .logo { font-size: 36px; }
+    .subtitle { margin-bottom: 15px; }
+    .screen { padding: 12px; }
+}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+    <section id="menu" class="screen active">
+        <div class="logo">RIFT RUNNER</div>
+        <div class="subtitle">VERSION 2.2</div>
+
+        <div class="stats">
+            💎 <span id="menuCrystals">0</span> кристаллов
+            <br>
+            🏆 Рекорд: <span id="menuRecord">0</span>
+        </div>
+
+        <div class="menu-buttons">
+            <button onclick="startGame()">▶ ИГРАТЬ</button>
+            <button class="secondary" onclick="showScreen('ships')">🚀 КОРАБЛИ</button>
+            <button class="secondary" onclick="showScreen('worlds')">🌌 МИРЫ</button>
+            <button class="secondary" onclick="showScreen('shop')">💎 МАГАЗИН</button>
+        </div>
+
+        <p style="color:#60749f;font-size:12px;margin-top:30px">
+            Избегай астероидов. Собирай кристаллы. Исследуй разломы.
+        </p>
+    </section>
+
+    <section id="ships" class="screen">
+        <div class="panel">
+            <h2>🚀 КОРАБЛИ</h2>
+            <p>Выбери свой корабль</p>
+            <div class="ship-grid" id="shipGrid"></div>
+            <br>
+            <button class="secondary" onclick="showScreen('menu')">НАЗАД</button>
+        </div>
+    </section>
+
+    <section id="worlds" class="screen">
+        <div class="panel">
+            <h2>🌌 МИРЫ</h2>
+            <div class="world-list" id="worldList"></div>
+            <br>
+            <button class="secondary" onclick="showScreen('menu')">НАЗАД</button>
+        </div>
+    </section>
+
+    <section id="shop" class="screen">
+        <div class="panel">
+            <h2>💎 МАГАЗИН</h2>
+            <p>Твои кристаллы: <b id="shopCrystals">0</b></p>
+
+            <div style="font-size:45px;margin:20px">💎</div>
+            <h3>Набор кристаллов</h3>
+            <p style="color:#9eb1da">Посмотри рекламу и получи 25 кристаллов</p>
+            <button onclick="watchAd()">ПОЛУЧИТЬ +25 💎</button>
+
+            <p style="font-size:12px;color:#7184aa">
+                Награда начисляется только после успешного просмотра.
+            </p>
+
+            <br>
+            <button class="secondary" onclick="showScreen('menu')">НАЗАД</button>
+        </div>
+    </section>
+
+    <section id="game" class="screen" style="padding:0">
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="topbar">
+            <button onclick="pauseGame()">Ⅱ ПАУЗА</button>
+            <button onclick="exitGame()">✕ ВЫХОД</button>
+        </div>
+
+        <div class="game-info">
+            <span>⭐ <span id="score">0</span></span>
+            <span>💎 <span id="runCrystals">0</span></span>
+            <span>❤️ <span id="lives">3</span></span>
+        </div>
+    </section>
+
+    <section id="pause" class="screen">
+        <div class="panel">
+            <h2>Ⅱ ПАУЗА</h2>
+            <button onclick="resumeGame()">ПРОДОЛЖИТЬ</button>
+            <br><br>
+            <button class="secondary" onclick="exitGame()">В МЕНЮ</button>
+        </div>
+    </section>
+
+    <section id="gameOver" class="screen">
+        <div class="panel">
+            <h2>РАЗЛОМ ЗАКРЫТ</h2>
+            <p>Твой результат:</p>
+            <h1 id="finalScore">0</h1>
+            <p>💎 Собрано: <span id="finalCrystals">0</span></p>
+            <p>🏆 Рекорд: <span id="finalRecord">0</span></p>
+            <button onclick="startGame()">↻ ЕЩЁ РАЗ</button>
+            <br><br>
+            <button class="secondary" onclick="showScreen('menu')">В МЕНЮ</button>
+        </div>
+    </section>
+
+    <div id="toast"></div>
+</div>
+
+<script>
+"use strict";
+
+/* =========================
+   TELEGRAM
+========================= */
+
+const tg = window.Telegram?.WebApp;
+
+if (tg) {
+    tg.ready();
+    tg.expand();
+
+    try {
+        tg.setHeaderColor("#080b19");
+        tg.setBackgroundColor("#080b19");
+    } catch (e) {}
+}
+
+/* =========================
+   SAVE DATA
+========================= */
+
+const SAVE_KEY = "rift_runner_save_22";
+
+const defaultSave = {
+    crystals: 0,
+    record: 0,
+    selectedShip: 0,
+    selectedWorld: 0,
+    unlockedShips: [0],
+    unlockedWorlds: [0]
+};
+
+let save;
+
+try {
+    save = {
+        ...defaultSave,
+        ...JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")
+    };
+} catch (e) {
+    save = {...defaultSave};
+}
+
+function saveData() {
+    try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    } catch (e) {}
+}
+
+function updateMenu() {
+    document.getElementById("menuCrystals").textContent = save.crystals;
+    document.getElementById("menuRecord").textContent = save.record;
+    document.getElementById("shopCrystals").textContent = save.crystals;
+}
+
+/* =========================
+   CONTENT
+========================= */
+
+const ships = [
+    {name:"NOVA", icon:"🚀", price:0, speed:1.0},
+    {name:"PHANTOM", icon:"🛸", price:300, speed:1.1},
+    {name:"BLAZE", icon:"🔥", price:650, speed:1.2},
+    {name:"SHADOW", icon:"🌑", price:1000, speed:1.25},
+    {name:"STORM", icon:"⚡", price:1500, speed:1.3},
+    {name:"VOID", icon:"☄️", price:2100, speed:1.4},
+    {name:"AURORA", icon:"🌠", price:2800, speed:1.5}
+];
+
+const worlds = [
+    {name:"RIFT", color:"#28c8ff", description:"Неизведанное пространство"},
+    {name:"MIST", color:"#a98aff", description:"Туманная галактика"},
+    {name:"SOLAR", color:"#ffb347", description:"Солнечный сектор"},
+    {name:"ABYSS", color:"#ff548b", description:"Глубины космоса"},
+    {name:"NOVA", color:"#68ffba", description:"Звёздная сверхновая"}
+];
+
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => {
+        s.classList.remove("active");
+    });
+
+    document.getElementById(id).classList.add("active");
+
+    if (id === "menu") updateMenu();
+    if (id === "ships") renderShips();
+    if (id === "worlds") renderWorlds();
+    if (id === "shop") updateMenu();
+}
+
+function renderShips() {
+    const grid = document.getElementById("shipGrid");
+    grid.innerHTML = "";
+
+    ships.forEach((ship, i) => {
+        const unlocked = save.unlockedShips.includes(i);
+        const selected = save.selectedShip === i;
+
+        const card = document.createElement("div");
+        card.className = "ship" + (selected ? " selected" : "");
+
+        const icon = document.createElement("div");
+        icon.className = "ship-icon";
+        icon.textContent = ship.icon;
+
+        const name = document.createElement("b");
+        name.textContent = ship.name;
+
+        const info = document.createElement("div");
+        info.innerHTML = "<br>";
+
+        const small = document.createElement("small");
+        small.textContent = unlocked ? "Открыт" : ship.price + " 💎";
+
+        const button = document.createElement("button");
+
+        if (selected) {
+            button.textContent = "ВЫБРАН";
+            button.disabled = true;
+        } else if (unlocked) {
+            button.textContent = "ВЫБРАТЬ";
+            button.onclick = () => {
+                save.selectedShip = i;
+                saveData();
+                renderShips();
+            };
+        } else {
+            button.textContent = "КУПИТЬ";
+            button.onclick = () => buyShip(i);
+        }
+
+        card.append(icon, name, info, small, button);
+        grid.appendChild(card);
+    });
+}
+
+function buyShip(i) {
+    const ship = ships[i];
+
+    if (save.unlockedShips.includes(i)) return;
+
+    if (save.crystals < ship.price) {
+        toast("Недостаточно кристаллов!");
+        return;
+    }
+
+    save.crystals -= ship.price;
+    save.unlockedShips.push(i);
+    save.selectedShip = i;
+
+    saveData();
+    renderShips();
+    updateMenu();
+
+    toast("Корабль " + ship.name + " открыт!");
+}
+
+function renderWorlds() {
+    const list = document.getElementById("worldList");
+    list.innerHTML = "";
+
+    worlds.forEach((world, i) => {
+        const unlocked = save.unlockedWorlds.includes(i);
+        const selected = save.selectedWorld === i;
+
+        const item = document.createElement("div");
+        item.className = "world" + (selected ? " selected" : "");
+
+        const title = document.createElement("b");
+        title.textContent = world.name;
+        title.style.color = world.color;
+
+        const description = document.createElement("p");
+        description.textContent = world.description;
+        description.style.color = "#9eb1da";
+
+        const button = document.createElement("button");
+
+        if (selected) {
+            button.textContent = "ВЫБРАН";
+            button.disabled = true;
+        } else if (unlocked) {
+            button.textContent = "ВЫБРАТЬ";
+            button.onclick = () => {
+                save.selectedWorld = i;
+                saveData();
+                renderWorlds();
+            };
+        } else {
+            button.textContent = "ЗАКРЫТ";
+            button.disabled = true;
+        }
+
+        item.append(title, description, button);
+        list.appendChild(item);
+    });
+}
+
+/* =========================
+   ADSGRAM
+========================= */
+
+let adController = null;
+
+try {
+    if (window.Adsgram) {
+        adController = window.Adsgram.init({
+            blockId: "60401"
+        });
+    }
+} catch (e) {
+    console.log("AdsGram не инициализирован:", e);
+}
+
+async function watchAd() {
+    if (!adController) {
+        toast("Реклама пока недоступна");
+        return;
+    }
+
+    try {
+        const result = await adController.show();
+
+        if (result && result.done === true) {
+            save.crystals += 25;
+            saveData();
+            updateMenu();
+            toast("Получено +25 кристаллов!");
+        } else {
+            toast("Просмотр не завершён");
+        }
+    } catch (e) {
+        console.log("Ошибка рекламы:", e);
+        toast("Не удалось загрузить рекламу");
+    }
+}
+
+/* =========================
+   GAME ENGINE
+========================= */
+
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+let W = 0;
+let H = 0;
+let animationId = null;
+let lastTime = 0;
+
+let running = false;
+let paused = false;
+
+let score = 0;
+let runCrystals = 0;
+let lives = 3;
+let gameTime = 0;
+let spawnTimer = 0;
+let crystalTimer = 0;
+let portalTimer = 0;
+let invincible = 0;
+
+let player = {
+    x: 0,
+    y: 0,
+    radius: 17,
+    targetX: 0
+};
+
+let asteroids = [];
+let crystals = [];
+let portals = [];
+let stars = [];
+
+const keys = {};
+
+function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    W = rect.width;
+    H = rect.height;
+
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    if (!running) {
+        player.x = W / 2;
+        player.targetX = W / 2;
+        player.y = H - 100;
+    }
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+function random(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function makeStars() {
+    stars = [];
+
+    for (let i = 0; i < 90; i++) {
+        stars.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            size: random(1, 2.5),
+            speed: random(20, 90)
+        });
+    }
+}
+
+function startGame() {
+    score = 0;
+    runCrystals = 0;
+    lives = 3;
+    gameTime = 0;
+    spawnTimer = 0;
+    crystalTimer = 0;
+    portalTimer = 0;
+    invincible = 0;
+
+    asteroids = [];
+    crystals = [];
+    portals = [];
+
+    resizeCanvas();
+    makeStars();
+
+    player.x = W / 2;
+    player.targetX = W / 2;
+    player.y = H - 100;
+
+    running = true;
+    paused = false;
+    lastTime = 0;
+
+    updateGameUI();
+    showScreen("game");
+
+    cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+function pauseGame() {
+    if (!running || paused) return;
+
+    paused = true;
+    showScreen("pause");
+}
+
+function resumeGame() {
+    if (!running || !paused) return;
+
+    paused = false;
+    lastTime = 0;
+
+    showScreen("game");
+    animationId = requestAnimationFrame(gameLoop);
+}
+
+function exitGame() {
+    running = false;
+    paused = false;
+
+    cancelAnimationFrame(animationId);
+    showScreen("menu");
+}
+
+function endGame() {
+    running = false;
+    cancelAnimationFrame(animationId);
+
+    save.crystals += runCrystals;
+
+    if (score > save.record) {
+        save.record = score;
+    }
+
+    saveData();
+
+    document.getElementById("finalScore").textContent = score;
+    document.getElementById("finalCrystals").textContent = runCrystals;
+    document.getElementById("finalRecord").textContent = save.record;
+
+    showScreen("gameOver");
+}
+
+function updateGameUI() {
+    document.getElementById("score").textContent = score;
+    document.getElementById("runCrystals").textContent = runCrystals;
+    document.getElementById("lives").textContent = lives;
+}
+
+/* =========================
+   CONTROLS
+========================= */
+
+window.addEventListener("keydown", e => {
+    keys[e.key.toLowerCase()] = true;
+
+    if (["ArrowLeft", "ArrowRight", " "].includes(e.key)) {
+        e.preventDefault();
+    }
+
+    if (e.key === "Escape" && running) {
+        if (paused) resumeGame();
+        else pauseGame();
+    }
+});
+
+window.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
+});
+
+function movePlayer(clientX) {
+    if (!running || paused) return;
+
+    const rect = canvas.getBoundingClientRect();
+    player.targetX = clientX - rect.left;
+}
+
+canvas.addEventListener("pointerdown", e => {
+    movePlayer(e.clientX);
+});
+
+canvas.addEventListener("pointermove", e => {
+    if (e.buttons || e.pointerType === "touch") {
+        movePlayer(e.clientX);
+    }
+});
+
+/* =========================
+   SPAWNING
+========================= */
+
+function spawnAsteroid() {
+    asteroids.push({
+        x: random(25, W - 25),
+        y: -35,
+        radius: random(13, 27),
+        speed: random(170, 270) + gameTime * 2,
+        rotation: random(0, Math.PI * 2),
+        spin: random(-2, 2)
+    });
+}
+
+function spawnCrystal() {
+    crystals.push({
+        x: random(20, W - 20),
+        y: -20,
+        radius: 10,
+        speed: random(130, 190)
+    });
+}
+
+function spawnPortal() {
+    portals.push({
+        x: random(45, W - 45),
+        y: -40,
+        radius: 24,
+        speed: 140
+    });
+}
+
+/* =========================
+   UPDATE
+========================= */
+
+function update(dt) {
+    gameTime += dt;
+
+    score += Math.floor(dt * 10);
+
+    if (invincible > 0) invincible -= dt;
+
+    let moveSpeed = 360 * ships[save.selectedShip].speed;
+
+    if (keys["arrowleft"] || keys["a"]) {
+        player.targetX -= moveSpeed * dt;
+    }
+
+    if (keys["arrowright"] || keys["d"]) {
+        player.targetX += moveSpeed * dt;
+    }
+
+    player.targetX = Math.max(18, Math.min(W - 18, player.targetX));
+
+    player.x += (player.targetX - player.x) * Math.min(1, dt * 12);
+
+    spawnTimer += dt;
+    crystalTimer += dt;
+    portalTimer += dt;
+
+    const asteroidInterval = Math.max(0.28, 0.85 - gameTime * 0.005);
+
+    if (spawnTimer > asteroidInterval) {
+        spawnTimer = 0;
+        spawnAsteroid();
+    }
+
+    if (crystalTimer > 1.15) {
+        crystalTimer = 0;
+        spawnCrystal();
+    }
+
+    if (portalTimer > 10) {
+        portalTimer = 0;
+        spawnPortal();
+    }
+
+    stars.forEach(s => {
+        s.y += s.speed * dt;
+
+        if (s.y > H) {
+            s.y = 0;
+            s.x = Math.random() * W;
+        }
+    });
+
+    asteroids.forEach(a => {
+        a.y += a.speed * dt;
+        a.rotation += a.spin * dt;
+
+        if (invincible <= 0) {
+            const dx = a.x - player.x;
+            const dy = a.y - player.y;
+
+            if (Math.hypot(dx, dy) < a.radius + player.radius - 5) {
+                a.dead = true;
+                lives--;
+                invincible = 1.4;
+
+                if (lives <= 0) {
+                    endGame();
+                }
+            }
+        }
+    });
+
+    crystals.forEach(c => {
+        c.y += c.speed * dt;
+
+        const dx = c.x - player.x;
+        const dy = c.y - player.y;
+
+        if (Math.hypot(dx, dy) < c.radius + player.radius + 5) {
+            c.dead = true;
+            runCrystals++;
+            score += 50;
+        }
+    });
+
+    portals.forEach(p => {
+    
 
