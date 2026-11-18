@@ -711,3 +711,146 @@ async function watchAd() {
     const Adsgram=await loadAdsgram();
     if(!Adsgram || typeof Adsgram.init!=="function") throw new Error("AdsGram SDK недоступен");
     if(!adController) adController=Adsgram.init({blockId:ADSGRAM_BLOCK_ID});
+    buttons.forEach(button=>button.textContent="⏳ Идёт показ рекламы...");
+    statuses.forEach(status=>status.textContent="Дождись завершения рекламы для получения награды.");
+
+    const result=await adController.show();
+    if(result && result.done===true && result.error!==true) {
+      save.crystals+=25;
+      save.totalEarned+=25;
+      saveData();updateUI();
+      statuses.forEach(status=>status.textContent="Награда получена!");
+      toast("🎉 +25 кристаллов!");
+    } else {
+      statuses.forEach(status=>status.textContent="Просмотр не завершён. Награды нет.");
+      toast("Просмотр не завершён — награды нет");
+    }
+  } catch(error) {
+    console.warn("AdsGram:",error);
+    statuses.forEach(status=>status.textContent="Реклама сейчас недоступна. Попробуй позже.");
+    toast("Не удалось показать рекламу");
+  } finally {
+    adBusy=false;
+    buttons.forEach(button=>{button.disabled=false;button.textContent="▶ Смотреть рекламу · +25 💎";});
+  }
+}
+$("watchAdButton").addEventListener("click",watchAd);
+$("watchAdMenuButton").addEventListener("click",watchAd);
+
+/* ИГРА */
+
+const canvas=$("gameCanvas");
+const ctx=canvas.getContext("2d");
+
+let game={
+  running:false,
+  paused:false,
+  score:0,
+  crystals:0,
+  playerX:0.5,
+  playerY:0.75,
+  objects:[],
+  stars:[],
+  lastTime:0,
+  spawn:0,
+  animation:0,
+  keys:{left:false,right:false,up:false,down:false}
+};
+
+let canvasWidth=0;
+let canvasHeight=0;
+
+function resizeCanvas() {
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+
+  canvasWidth=rect.width;
+  canvasHeight=rect.height;
+
+  canvas.width=Math.floor(rect.width*dpr);
+  canvas.height=Math.floor(rect.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  if(!game.stars.length) {
+    for(let i=0;i<65;i++) {
+      game.stars.push({
+        x:Math.random()*canvasWidth,
+        y:Math.random()*canvasHeight,
+        s:Math.random()*2+0.5,
+        speed:Math.random()*35+15
+      });
+    }
+  }
+}
+
+window.addEventListener("resize",()=>{
+  if(!$("gameScreen").classList.contains("hidden")) resizeCanvas();
+});
+
+function startGame() {
+  $("resultModal").classList.add("hidden");
+  $("pauseModal").classList.add("hidden");
+  showScreen("gameScreen");
+  resizeCanvas();
+
+  game.running=true;
+  game.paused=false;
+  game.score=0;
+  game.crystals=0;
+  game.playerX=0.5;
+  game.playerY=0.75;
+  game.objects=[];
+  game.spawn=0;
+  game.lastTime=performance.now();
+  game.keys={left:false,right:false,up:false,down:false};
+
+  $("score").textContent="0";
+  $("runCrystals").textContent="0";
+
+  cancelAnimationFrame(game.animation);
+  game.animation=requestAnimationFrame(loop);
+}
+
+function endGame() {
+  if(!game.running) return;
+
+  game.running=false;
+  cancelAnimationFrame(game.animation);
+
+  const score=Math.floor(game.score);
+  const earned=game.crystals;
+
+  save.crystals+=earned;
+  save.totalEarned+=earned;
+  save.best=Math.max(save.best,score);
+  saveData();
+  updateUI();
+
+  $("finalScore").textContent=score;
+  $("finalCrystals").textContent=earned;
+  $("resultTitle").textContent="Полёт завершён";
+  $("resultModal").classList.remove("hidden");
+}
+
+function pauseGame() {
+  if(!game.running || game.paused) return;
+  game.paused=true;
+  $("pauseModal").classList.remove("hidden");
+}
+
+function resumeGame() {
+  if(!game.running) return;
+  game.paused=false;
+  game.lastTime=performance.now();
+  $("pauseModal").classList.add("hidden");
+  game.animation=requestAnimationFrame(loop);
+}
+
+function movePlayer(direction) {
+  if(!game.running || game.paused) return;
+  game.playerX=Math.max(0.08,Math.min(0.92,game.playerX+direction*0.09));
+}
+
+function movePlayerVertical(direction) {
+  if(!game.running || game.paused) return;
+  game.playerY=Math.max(0.12,Math.min(0.85,game.playerY+direction*0.09));
