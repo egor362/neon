@@ -141,3 +141,147 @@ h2 {font-size:22px;margin:8px 0 16px}
   position:fixed;bottom:25px;left:50%;transform:translateX(-50%);
   background:#202e50;border:1px solid #4a6295;color:white;
   padding:12px 18px;border-radius:12px;z-index:20;
+  display:none;max-width:90%;text-align:center;
+}
+.modal {
+  position:fixed;inset:0;background:#050817dd;z-index:10;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.modal-box {
+  width:100%;max-width:380px;text-align:center;
+  background:#172343;border:1px solid #536a9c;border-radius:20px;padding:24px;
+}
+.rarity {display:inline-block;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:bold;margin:5px 0}
+.r-common {background:#39445b;color:#d9e0ef}
+.r-uncommon {background:#174d37;color:#8dffc1}
+.r-rare {background:#173d70;color:#91c8ff}
+.r-epic {background:#4c2875;color:#e1b4ff}
+.r-legendary {background:#705018;color:#ffe19a}
+.case-card {background:linear-gradient(145deg,#1d3158,#121a35);border:1px solid #49618e;border-radius:17px;padding:14px;text-align:center}
+.case-art {font-size:48px;margin:8px}
+.reward-reveal {border:1px solid #6079ad;background:#1c2b50;border-radius:16px;padding:18px;margin:12px 0}
+.footer {text-align:center;color:#7180a7;font-size:11px;margin:25px 0 10px}
+</style>
+</head>
+
+<body>
+<div id="app">
+
+<div class="topbar">
+  <div class="logo">RIFT <span>RUNNER</span></div>
+  <div class="balance">💎 <span id="crystals">0</span></div>
+</div>
+
+<!-- ГЛАВНОЕ МЕНЮ -->
+<section id="menuScreen">
+  <div class="panel hero">
+    <div class="pill">КОСМИЧЕСКОЕ ПРИКЛЮЧЕНИЕ</div>
+    <div class="ship-art" id="menuShip">🚀</div>
+    <h1>RIFT RUNNER</h1>
+    <p class="subtitle">Пролетай через разломы, собирай кристаллы и исследуй новые миры.</p>
+    <button class="primary" data-action="play">▶ ИГРАТЬ</button>
+    <button class="ad-button" id="watchAdMenuButton" style="margin-top:10px">▶ Смотреть рекламу · +25 💎</button>
+    <p class="subtitle" id="adMenuStatus" style="margin:9px 0 0">Добровольный просмотр за игровые кристаллы.</p>
+  </div>
+
+  <div class="button-grid">
+    <button class="secondary" data-action="ships">🚀 Корабли</button>
+    <button class="secondary" data-action="worlds">🌌 Миры</button>
+    <button class="secondary" data-action="shop">💎 Магазин</button>
+    <button class="secondary" data-action="stats">🏆 Результаты</button>
+    <button class="secondary" data-action="cases">🎁 Кейсы</button>
+    <button class="secondary" data-action="inventory">🎒 Коллекция</button>
+  </div>
+
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between">
+      <b>Лучший результат</b>
+      <b id="bestScore">0</b>
+    </div>
+    <div class="subtitle" style="margin-top:8px">Продолжай играть, чтобы открывать новые миры.</div>
+  </div>
+</section>
+
+<!-- КОРАБЛИ -->
+<section id="shipsScreen" class="hidden">
+  <button class="secondary back" data-action="home">← Назад</button>
+  <h2>🚀 Выбор корабля</h2>
+  <p class="subtitle">Выбери корабль для своего путешествия.</p>
+  <div class="cards" id="shipsList"></div>
+</section>
+
+<!-- МИРЫ -->
+<section id="worldsScreen" class="hidden">
+  <button class="secondary back" data-action="home">← Назад</button>
+  <h2>🌌 Космические миры</h2>
+  <p class="subtitle">Новые миры открываются после достижения нужного результата.</p>
+  <div class="cards" id="worldsList"></div>
+</section>
+
+<!-- МАГАЗИН -->
+<section id="shopScreen" class="hidden">
+  <button class="secondary back" data-action="home">← Назад</button>
+  <h2>💎 Магазин</h2>
+  <div class="panel">
+    <h2>💎 <span id="shopCrystals">0</span></h2>
+    <p class="subtitle">Смотри Reward-рекламу и получай кристаллы.</p>
+    <button class="ad-button" id="watchAdButton">▶ Смотреть рекламу · +25 💎</button>
+    <p class="subtitle" id="adStatus" style="text-align:center">Награда выдаётся за завершённый просмотр.</p>
+  </div>
+  <div class="panel">
+    <b>На что потратить кристаллы?</b>
+    <p class="subtitle">Покупай новые корабли и открывай дополнительные возможности.</p>
+    <button class="secondary" data-action="ships">🚀 Перейти к кораблям</button>
+    <button class="secondary" data-action="cases" style="margin-top:10px">🎁 Открыть кейсы</button>
+    <button class="secondary" data-action="inventory" style="margin-top:10px">🎒 Моя коллекция</button>
+  </div>
+</section>
+
+<!-- КЕЙСЫ -->
+<section id="casesScreen" class="hidden">
+  <button class="secondary back" data-action="home">← Назад</button>
+  <h2>🎁 Космические кейсы</h2>
+  <p class="subtitle">Открывай кейсы за игровые кристаллы. Шансы выпадения показаны заранее.</p>
+  <div class="cards" id="casesList"></div>
+  <div class="panel">
+    <b>Редкости предметов</b>
+    <p><span class="rarity r-common">Обычный</span> <span class="rarity r-uncommon">Необычный</span></p>
+    <p><span class="rarity r-rare">Редкий</span> <span class="rarity r-epic">Эпический</span> <span class="rarity r-legendary">Легендарный</span></p>
+  </div>
+  <div id="caseResult" class="reward-reveal hidden"></div>
+</section>
+
+<!-- КОЛЛЕКЦИЯ -->
+<section id="inventoryScreen" class="hidden">
+  <button class="secondary back" data-action="home">← Назад</button>
+  <h2>🎒 Моя коллекция</h2>
+  <div class="panel">
+    <b>✨ Осколки: <span id="shardsCount">0</span></b>
+    <p class="subtitle">Повторные предметы превращаются в осколки. Улучшение сборщика повышает шанс получить дополнительный кристалл во время полёта.</p>
+    <p>Уровень сборщика: <b id="collectorLevel">0</b> / 3</p>
+    <button class="secondary" id="upgradeCollectorButton">Улучшить сборщик · 30 осколков</button>
+  </div>
+  <div class="cards" id="inventoryList"></div>
+</section>
+
+<!-- РЕЗУЛЬТАТЫ -->
+<section id="statsScreen" class="hidden">
+  <button class="secondary back" data-action="home">← Назад</button>
+  <h2>🏆 Результаты</h2>
+  <div class="panel">
+    <p>Лучший результат: <b id="statsBest">0</b></p>
+    <p>Всего собрано кристаллов: <b id="statsEarned">0</b></p>
+    <p>Открыто миров: <b id="statsWorlds">1</b> / 5</p>
+    <p>Куплено кораблей: <b id="statsShips">1</b></p>
+  </div>
+</section>
+
+<!-- ИГРА -->
+<section id="gameScreen" class="hidden">
+  <div class="game-head">
+    <button class="secondary" style="padding:9px 13px" data-action="pause">Ⅱ Пауза</button>
+    <div class="game-stat">Очки: <b id="score">0</b></div>
+    <div class="game-stat">💎 <b id="runCrystals">0</b></div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
