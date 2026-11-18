@@ -997,3 +997,147 @@ function updateGame(dt){
   const py=game.playerY*canvasHeight;
 
   for(let i=game.objects.length-1;i>=0;i--){
+        const obj=game.objects[i];
+    obj.y+=obj.speed*dt;
+
+    const dx=obj.x-px;
+    const dy=obj.y-py;
+    const distance=Math.sqrt(dx*dx+dy*dy);
+
+    if(obj.type==="crystal" && distance<25){
+      game.crystals++;
+      if(save.collectorLevel>0 && Math.random()<save.collectorLevel*0.12) game.crystals++;
+      game.objects.splice(i,1);
+      $("runCrystals").textContent=game.crystals;
+      continue;
+    }
+
+    if(obj.type==="rock" && distance<27){
+      endGame();
+      return;
+    }
+
+    if(obj.y>canvasHeight+40){
+      game.objects.splice(i,1);
+    }
+  }
+
+  game.stars.forEach(star=>{
+    star.y+=star.speed*dt;
+
+    if(star.y>canvasHeight){
+      star.y=0;
+      star.x=Math.random()*canvasWidth;
+    }
+  });
+
+  $("score").textContent=Math.floor(game.score);
+}
+
+/* РИСОВАНИЕ КОРАБЛЯ */
+
+function drawPlayer(){
+  const x=game.playerX*canvasWidth;
+  const y=game.playerY*canvasHeight;
+  const ship=save.selectedShip;
+
+  const colors=[
+    "#48eaff",
+    "#b58aff",
+    "#ffb84d",
+    "#ff5ca8",
+    "#8cffb0"
+  ];
+
+  const equipped=ITEMS.find(item=>item.id===save.equippedSkin);
+  const trail=ITEMS.find(item=>item.id===save.equippedTrail);
+  const color=equipped?.color||colors[ship]||colors[0];
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  ctx.shadowColor=color;
+  ctx.shadowBlur=18;
+
+  ctx.fillStyle=color;
+  ctx.strokeStyle="#ffffff";
+  ctx.lineWidth=2;
+
+  ctx.beginPath();
+
+  if(ship===1){
+    ctx.moveTo(0,-20);
+    ctx.lineTo(22,0);
+    ctx.lineTo(12,12);
+    ctx.lineTo(-12,12);
+    ctx.lineTo(-22,0);
+  }else if(ship===2){
+    ctx.moveTo(0,-22);
+    ctx.lineTo(14,8);
+    ctx.lineTo(0,17);
+    ctx.lineTo(-14,8);
+  }else if(ship===3){
+    ctx.moveTo(0,-22);
+    ctx.lineTo(18,13);
+    ctx.lineTo(0,7);
+    ctx.lineTo(-18,13);
+  }else if(ship===4){
+    ctx.moveTo(0,-24);
+    ctx.lineTo(19,-2);
+    ctx.lineTo(13,15);
+    ctx.lineTo(0,9);
+    ctx.lineTo(-13,15);
+    ctx.lineTo(-19,-2);
+  }else{
+    ctx.moveTo(0,-22);
+    ctx.lineTo(17,15);
+    ctx.lineTo(0,8);
+    ctx.lineTo(-17,15);
+  }
+
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur=10;
+  ctx.fillStyle="#ffffff";
+  ctx.beginPath();
+  ctx.arc(0,-3,4,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.shadowBlur=12;
+  ctx.fillStyle=trail?.color||"#ffb84d";
+  ctx.beginPath();
+  ctx.moveTo(-5,14);
+  ctx.lineTo(0,25+Math.random()*5);
+  ctx.lineTo(5,14);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* РИСОВАНИЕ ОБЪЕКТОВ */
+
+function drawObjects(){
+  game.objects.forEach(obj=>{
+    ctx.save();
+
+    if(obj.type==="crystal"){
+      ctx.shadowColor="#48eaff";
+      ctx.shadowBlur=15;
+      ctx.fillStyle="#48eaff";
+
+      ctx.translate(obj.x,obj.y);
+      ctx.rotate(Math.PI/4);
+
+      ctx.fillRect(-8,-8,16,16);
+    }else{
+      ctx.shadowColor="#ff5c83";
+      ctx.shadowBlur=10;
+      ctx.fillStyle="#ff5c83";
+
+      ctx.beginPath();
+      ctx.arc(obj.x,obj.y,obj.size,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.strokeStyle="#ffc0d1";
