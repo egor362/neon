@@ -283,5 +283,146 @@ h2 {font-size:22px;margin:8px 0 16px}
     <div class="game-stat">Очки: <b id="score">0</b></div>
     <div class="game-stat">💎 <b id="runCrystals">0</b></div>
   </div>
+  <div class="game-controls">
+    <button id="leftButton">←</button>
+    <button id="upButton">↑</button>
+    <button id="downButton">↓</button>
+    <button id="rightButton">→</button>
+  </div>
 
+  <p class="subtitle" style="text-align:center">Управляй кораблём в четырёх направлениях, уклоняйся от препятствий и собирай кристаллы.</p>
+</section>
+
+<div class="footer">RIFT RUNNER · версия 4.0</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="resultModal" class="modal hidden">
+  <div class="modal-box">
+    <h2 id="resultTitle">Полёт завершён</h2>
+    <div style="font-size:48px;margin:12px">🏆</div>
+    <p>Очки: <b id="finalScore">0</b></p>
+    <p>Кристаллы: <b id="finalCrystals">0</b></p>
+    <button class="primary" id="againButton">Играть снова</button>
+    <button class="secondary" id="resultHome" style="margin-top:10px">В меню</button>
+  </div>
+</div>
+
+<div id="pauseModal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Пауза</h2>
+    <p class="subtitle">Твой полёт приостановлен.</p>
+    <button class="primary" id="resumeButton">Продолжить</button>
+    <button class="secondary" id="quitButton" style="margin-top:10px">Выйти в меню</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* TELEGRAM */
+
+const tg=window.Telegram?.WebApp;
+
+if(tg) {
+  tg.ready();
+  tg.expand();
+  try {tg.setHeaderColor("#080b1b");} catch(e) {}
+}
+
+/* ИГРОВЫЕ ДАННЫЕ */
+
+const SHIPS=[
+  {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
+  {id:1,name:"Фантом",emoji:"🛸",price:100,desc:"Лёгкий и быстрый"},
+  {id:2,name:"Комета",emoji:"☄️",price:200,desc:"Для дальних путешествий"},
+  {id:3,name:"Неон",emoji:"🌠",price:350,desc:"Корабль исследователей"},
+  {id:4,name:"Рифт",emoji:"🚀",price:500,desc:"Редкий космический корабль"}
+];
+
+const WORLDS=[
+  {id:0,name:"Синий сектор",emoji:"🌌",need:0,color:"#101d42"},
+  {id:1,name:"Красная туманность",emoji:"🔴",need:100,color:"#35172e"},
+  {id:2,name:"Ледяная орбита",emoji:"❄️",need:250,color:"#12334a"},
+  {id:3,name:"Звёздный шторм",emoji:"⚡",need:500,color:"#30204c"},
+  {id:4,name:"Разлом",emoji:"🌀",need:900,color:"#251345"}
+];
+
+const RARITIES={
+  common:{name:"Обычный",className:"r-common",shards:5},
+  uncommon:{name:"Необычный",className:"r-uncommon",shards:10},
+  rare:{name:"Редкий",className:"r-rare",shards:20},
+  epic:{name:"Эпический",className:"r-epic",shards:35},
+  legendary:{name:"Легендарный",className:"r-legendary",shards:60}
+};
+
+const ITEMS=[
+  {id:"skin_ice",name:"Ледяной корпус",emoji:"❄️",type:"skin",rarity:"common",color:"#8feaff",desc:"Холодное сияние корпуса"},
+  {id:"skin_lime",name:"Кислотный неон",emoji:"🟢",type:"skin",rarity:"common",color:"#a5ff72",desc:"Яркий зелёный корпус"},
+  {id:"trail_blue",name:"Синий след",emoji:"💠",type:"trail",rarity:"uncommon",color:"#48eaff",desc:"Голубой след двигателя"},
+  {id:"skin_purple",name:"Плазма",emoji:"🟣",type:"skin",rarity:"uncommon",color:"#bd82ff",desc:"Плазменный корпус"},
+  {id:"trail_pink",name:"Розовый импульс",emoji:"💗",type:"trail",rarity:"rare",color:"#ff5ca8",desc:"Розовый след двигателя"},
+  {id:"skin_gold",name:"Золотой реликт",emoji:"🌟",type:"skin",rarity:"rare",color:"#ffc857",desc:"Золотое покрытие"},
+  {id:"trail_lightning",name:"Молния",emoji:"⚡",type:"trail",rarity:"epic",color:"#c5a0ff",desc:"Электрический след"},
+  {id:"skin_void",name:"Пустотный",emoji:"🌑",type:"skin",rarity:"epic",color:"#e18cff",desc:"Корпус из энергии разлома"},
+  {id:"skin_galaxy",name:"Галактика",emoji:"🌌",type:"skin",rarity:"legendary",color:"#ffe58b",desc:"Легендарное звёздное сияние"},
+  {id:"trail_rift",name:"След разлома",emoji:"🌀",type:"trail",rarity:"legendary",color:"#ff8df3",desc:"Редкий след энергии разлома"},
+  {id:"upgrade_collector",name:"Сборщик кристаллов",emoji:"💎",type:"upgrade",rarity:"rare",desc:"Повышает шанс дополнительного кристалла"}
+];
+
+const CASES=[
+  {id:"basic",name:"Стандартный",emoji:"📦",price:100,weights:{common:65,uncommon:25,rare:8,epic:1.8,legendary:0.2}},
+  {id:"rare",name:"Редкий",emoji:"🧰",price:250,weights:{common:35,uncommon:40,rare:20,epic:4.5,legendary:0.5}},
+  {id:"epic",name:"Эпический",emoji:"🎁",price:500,weights:{common:10,uncommon:25,rare:40,epic:22,legendary:3}},
+  {id:"cosmic",name:"Космический",emoji:"🌠",price:1000,weights:{common:0,uncommon:0,rare:5,epic:55,legendary:40}}
+];
+
+const DEFAULT_SAVE={
+  crystals:0,
+  totalEarned:0,
+  best:0,
+  selectedShip:0,
+  selectedWorld:0,
+  ownedShips:[0],
+  ownedItems:[],
+  equippedSkin:"",
+  equippedTrail:"",
+  shards:0,
+  collectorLevel:0
+};
+
+let save;
+
+function loadSave() {
+  try {
+    const raw=localStorage.getItem("riftRunnerSave");
+    const parsed=raw?JSON.parse(raw):{};
+    save={...DEFAULT_SAVE,...parsed};
+
+    if(!Array.isArray(save.ownedShips)) save.ownedShips=[0];
+    if(!save.ownedShips.includes(0)) save.ownedShips.push(0);
+    if(!Array.isArray(save.ownedItems)) save.ownedItems=[];
+    save.shards=Math.max(0,Number(save.shards)||0);
+    save.collectorLevel=Math.max(0,Math.min(3,Number(save.collectorLevel)||0));
+    if(typeof save.equippedSkin!=="string") save.equippedSkin="";
+    if(typeof save.equippedTrail!=="string") save.equippedTrail="";
+
+    save.crystals=Math.max(0,Number(save.crystals)||0);
+    save.best=Math.max(0,Number(save.best)||0);
+    save.totalEarned=Math.max(0,Number(save.totalEarned)||0);
+    save.selectedShip=Number(save.selectedShip)||0;
+    save.selectedWorld=Number(save.selectedWorld)||0;
+
+    if(!SHIPS.some(s=>s.id===save.selectedShip && save.ownedShips.includes(s.id))) {
+      save.selectedShip=0;
+    }
+    if(!WORLDS.some(w=>w.id===save.selectedWorld && save.best>=w.need)) {
+      save.selectedWorld=0;
+    }
+  } catch(e) {
+    save={...DEFAULT_SAVE,ownedShips:[0]};
+  }
+}
   <canvas id="gameCanvas"></canvas>
