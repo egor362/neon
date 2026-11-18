@@ -1,1 +1,920 @@
 
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#080b1b">
+<title>RIFT RUNNER</title>
+
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<style>
+:root {
+  --bg:#080b1b;
+  --panel:#111832;
+  --panel2:#192344;
+  --cyan:#48eaff;
+  --purple:#a879ff;
+  --pink:#ff5ca8;
+  --text:#f3f5ff;
+  --muted:#9ba8cc;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  background:radial-gradient(ellipse at top,#18234a 0%,#080b1b 65%);
+  color:var(--text);
+  font-family:Arial,sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+  user-select:none;
+}
+button {
+  border:0;
+  color:white;
+  font-size:16px;
+  font-weight:bold;
+  cursor:pointer;
+  touch-action:manipulation;
+}
+button:disabled {opacity:.5;cursor:default}
+#app {max-width:520px;margin:auto;padding:16px;min-height:100vh}
+.topbar {
+  display:flex;justify-content:space-between;align-items:center;
+  margin:4px 0 22px;
+}
+.logo {font-size:23px;font-weight:900;letter-spacing:2px}
+.logo span {color:var(--cyan)}
+.balance {
+  background:#182344;border:1px solid #35466f;
+  border-radius:20px;padding:9px 13px;color:#ffe58b;font-weight:bold;
+}
+h1 {font-size:27px;margin:8px 0}
+h2 {font-size:22px;margin:8px 0 16px}
+.subtitle {color:var(--muted);font-size:14px;line-height:1.5}
+.panel {
+  background:linear-gradient(145deg,#172343,#10172d);
+  border:1px solid #2b3b65;border-radius:20px;
+  padding:18px;margin:14px 0;
+  box-shadow:0 10px 30px #0005;
+}
+.hero {
+  text-align:center;padding:28px 18px;
+  background:radial-gradient(circle at 50% 35%,#293d77,#121a35 70%);
+}
+.ship-art {
+  font-size:76px;margin:12px 0;
+  filter:drop-shadow(0 0 18px #48eaff99);
+}
+.primary {
+  width:100%;padding:16px;border-radius:14px;
+  background:linear-gradient(100deg,#18bce8,#765cff);
+  box-shadow:0 5px 20px #4b7dff44;
+}
+.secondary {
+  width:100%;padding:14px;border-radius:13px;
+  background:#26345b;border:1px solid #40527e;
+}
+.ad-button {
+  width:100%;padding:15px;border-radius:14px;
+  background:linear-gradient(100deg,#a66bff,#e34eaa);
+}
+.button-grid {
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;
+}
+.small-card {
+  background:#182344;border:1px solid #30416c;
+  border-radius:15px;padding:14px;text-align:center;
+}
+.small-card .emoji {font-size:30px;margin-bottom:8px}
+.small-card p {color:var(--muted);font-size:12px;margin:6px 0}
+.cards {display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.item {
+  background:#151f3d;border:1px solid #30416c;
+  border-radius:16px;padding:14px;text-align:center;
+}
+.item.selected {border:2px solid var(--cyan);background:#1b3150}
+.item .emoji {font-size:43px;margin:8px}
+.item .name {font-weight:bold;margin:5px}
+.item .desc {font-size:12px;color:var(--muted);min-height:30px}
+.item button {margin-top:10px}
+.pill {
+  display:inline-block;border-radius:20px;padding:5px 9px;
+  background:#26385e;color:#bcefff;font-size:11px;
+}
+.hidden {display:none!important}
+.back {margin-bottom:14px;width:auto;padding:10px 15px}
+#gameScreen {padding:0}
+.game-head {
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 2px 12px;
+}
+.game-stat {color:#dce8ff;font-size:14px}
+#gameCanvas {
+  width:100%;height:min(67vh,590px);display:block;
+  background:#080d22;border:1px solid #34446f;
+  border-radius:17px;touch-action:none;
+}
+.game-controls {
+  display:flex;gap:10px;margin-top:10px;
+}
+.game-controls button {flex:1;padding:15px;border-radius:13px;background:#26345b}
+#toast {
+  position:fixed;bottom:25px;left:50%;transform:translateX(-50%);
+  background:#202e50;border:1px solid #4a6295;color:white;
+  padding:12px 18px;border-radius:12px;z-index:20;
+  display:none;max-width:90%;text-align:center;
+}
+.modal {
+  position:fixed;inset:0;background:#050817dd;z-index:10;
+  display:flex;align-items:center;justify-content:center;padding:20px;
+}
+.modal-box {
+  width:100%;max-width:380px;text-align:center;
+  background:#172343;border:1px solid #536a9c;border-radius:20px;padding:24px;
+}
+.progress {
+  height:9px;background:#273557;border-radius:10px;overflow:hidden;margin-top:10px;
+}
+.progress div {height:100%;background:linear-gradient(90deg,#36d9ff,#9d70ff);width:0%}
+.footer {text-align:center;color:#7180a7;font-size:11px;margin:25px 0 10px}
+</style>
+
+<script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+</head>
+
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="logo">RIFT <span>RUNNER</span></div>
+    <div class="balance">💎 <span id="crystals">0</span></div>
+  </div>
+
+  <!-- ГЛАВНОЕ МЕНЮ -->
+  <section id="menuScreen">
+    <div class="panel hero">
+      <div class="pill">КОСМИЧЕСКОЕ ПРИКЛЮЧЕНИЕ</div>
+      <div class="ship-art" id="menuShip">🚀</div>
+      <h1>RIFT RUNNER</h1>
+      <p class="subtitle">Пролетай через разломы, собирай кристаллы и открывай новые миры.</p>
+      <button class="primary" data-action="play">▶ ИГРАТЬ</button>
+    </div>
+
+    <div class="button-grid">
+      <button class="secondary" data-action="ships">🚀 Корабли</button>
+      <button class="secondary" data-action="worlds">🌌 Миры</button>
+      <button class="secondary" data-action="shop">💎 Магазин</button>
+      <button class="secondary" data-action="stats">🏆 Результаты</button>
+    </div>
+
+    <div class="panel">
+      <div style="display:flex;justify-content:space-between">
+        <b>Лучший результат</b>
+        <b id="bestScore">0</b>
+      </div>
+      <div class="subtitle" style="margin-top:8px">Продолжай играть, чтобы открывать новые миры.</div>
+    </div>
+  </section>
+
+  <!-- КОРАБЛИ -->
+  <section id="shipsScreen" class="hidden">
+    <button class="secondary back" data-action="home">← Назад</button>
+    <h2>🚀 Выбор корабля</h2>
+    <p class="subtitle">Выбери корабль для своего путешествия.</p>
+    <div class="cards" id="shipsList"></div>
+  </section>
+
+  <!-- МИРЫ -->
+  <section id="worldsScreen" class="hidden">
+    <button class="secondary back" data-action="home">← Назад</button>
+    <h2>🌌 Космические миры</h2>
+    <p class="subtitle">Каждый следующий мир открывается после достижения нужного результата.</p>
+    <div class="cards" id="worldsList"></div>
+  </section>
+
+  <!-- МАГАЗИН -->
+  <section id="shopScreen" class="hidden">
+    <button class="secondary back" data-action="home">← Назад</button>
+    <h2>💎 Магазин</h2>
+    <div class="panel">
+      <h2>💎 <span id="shopCrystals">0</span></h2>
+      <p class="subtitle">Смотри Reward-рекламу и получай кристаллы.</p>
+      <button class="ad-button" id="watchAdButton">▶ Смотреть рекламу · +25 💎</button>
+      <p class="subtitle" id="adStatus" style="text-align:center;margin-bottom:0">Награда выдаётся за завершённый просмотр.</p>
+    </div>
+    <div class="panel">
+      <b>На что потратить кристаллы?</b>
+      <p class="subtitle">Покупай новые корабли и открывай дополнительные возможности.</p>
+      <button class="secondary" data-action="ships">🚀 Перейти к кораблям</button>
+    </div>
+  </section>
+
+  <!-- РЕЗУЛЬТАТЫ -->
+  <section id="statsScreen" class="hidden">
+    <button class="secondary back" data-action="home">← Назад</button>
+    <h2>🏆 Результаты</h2>
+    <div class="panel">
+      <p>Лучший результат: <b id="statsBest">0</b></p>
+      <p>Всего собрано кристаллов: <b id="statsEarned">0</b></p>
+      <p>Открыто миров: <b id="statsWorlds">1</b> / 5</p>
+      <p>Куплено кораблей: <b id="statsShips">1</b></p>
+    </div>
+  </section>
+
+  <!-- ИГРА -->
+  <section id="gameScreen" class="hidden">
+    <div class="game-head">
+      <button class="secondary" style="padding:9px 13px" data-action="pause">Ⅱ Пауза</button>
+      <div class="game-stat">Очки: <b id="score">0</b></div>
+      <div class="game-stat">💎 <b id="runCrystals">0</b></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="game-controls">
+      <button id="leftButton">← ВЛЕВО</button>
+      <button id="rightButton">ВПРАВО →</button>
+    </div>
+    <p class="subtitle" style="text-align:center">Управляй кораблём, уклоняйся от препятствий и собирай кристаллы.</p>
+  </section>
+
+  <div class="footer">RIFT RUNNER · версия 3.0</div>
+</div>
+
+<div id="toast"></div>
+
+<div id="resultModal" class="modal hidden">
+  <div class="modal-box">
+    <h2 id="resultTitle">Полёт завершён</h2>
+    <div style="font-size:48px;margin:12px">🏆</div>
+    <p>Очки: <b id="finalScore">0</b></p>
+    <p>Кристаллы: <b id="finalCrystals">0</b></p>
+    <button class="primary" id="againButton">Играть снова</button>
+    <button class="secondary" id="resultHome" style="margin-top:10px">В меню</button>
+  </div>
+</div>
+
+<div id="pauseModal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Пауза</h2>
+    <p class="subtitle">Твой полёт приостановлен.</p>
+    <button class="primary" id="resumeButton">Продолжить</button>
+    <button class="secondary" id="quitButton" style="margin-top:10px">Выйти в меню</button>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* =========================
+   TELEGRAM MINI APP
+========================= */
+
+const tg = window.Telegram?.WebApp;
+
+if (tg) {
+  tg.ready();
+  tg.expand();
+  try { tg.setHeaderColor("#080b1b"); } catch(e) {}
+}
+
+/* =========================
+   ИГРОВЫЕ ДАННЫЕ
+========================= */
+
+const SHIPS = [
+  {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
+  {id:1,name:"Фантом",emoji:"🛸",price:100,desc:"Лёгкий и быстрый"},
+  {id:2,name:"Комета",emoji:"☄️",price:200,desc:"Для дальних путешествий"},
+  {id:3,name:"Неон",emoji:"🌠",price:350,desc:"Корабль исследователей"},
+  {id:4,name:"Рифт",emoji:"🚀",price:500,desc:"Редкий космический корабль"}
+];
+
+const WORLDS = [
+  {id:0,name:"Синий сектор",emoji:"🌌",need:0,color:"#101d42"},
+  {id:1,name:"Красная туманность",emoji:"🔴",need:100,color:"#35172e"},
+  {id:2,name:"Ледяная орбита",emoji:"❄️",need:250,color:"#12334a"},
+  {id:3,name:"Звёздный шторм",emoji:"⚡",need:500,color:"#30204c"},
+  {id:4,name:"Разлом",emoji:"🌀",need:900,color:"#251345"}
+];
+
+const DEFAULT_SAVE = {
+  crystals:0,
+  totalEarned:0,
+  best:0,
+  selectedShip:0,
+  selectedWorld:0,
+  ownedShips:[0]
+};
+
+let save;
+
+function loadSave() {
+  try {
+    const raw = localStorage.getItem("riftRunnerSave");
+    const parsed = raw ? JSON.parse(raw) : {};
+    save = {...DEFAULT_SAVE,...parsed};
+
+    if (!Array.isArray(save.ownedShips)) save.ownedShips=[0];
+    if (!save.ownedShips.includes(0)) save.ownedShips.push(0);
+
+    save.crystals = Math.max(0,Number(save.crystals)||0);
+    save.best = Math.max(0,Number(save.best)||0);
+    save.totalEarned = Math.max(0,Number(save.totalEarned)||0);
+    save.selectedShip = Number(save.selectedShip)||0;
+    save.selectedWorld = Number(save.selectedWorld)||0;
+  } catch(e) {
+    save = {...DEFAULT_SAVE,ownedShips:[0]};
+  }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem("riftRunnerSave",JSON.stringify(save));
+  } catch(e) {
+    console.warn("Не удалось сохранить прогресс",e);
+  }
+}
+
+loadSave();
+
+/* =========================
+   ЭЛЕМЕНТЫ И НАВИГАЦИЯ
+========================= */
+
+const $ = id => document.getElementById(id);
+
+const screens = [
+  "menuScreen","shipsScreen","worldsScreen",
+  "shopScreen","statsScreen","gameScreen"
+];
+
+function showScreen(name) {
+  screens.forEach(id => $(id).classList.add("hidden"));
+  $(name).classList.remove("hidden");
+  $("resultModal").classList.add("hidden");
+  $("pauseModal").classList.add("hidden");
+  updateUI();
+}
+
+function toast(message) {
+  const el=$("toast");
+  el.textContent=message;
+  el.style.display="block";
+  clearTimeout(toast.timer);
+  toast.timer=setTimeout(()=>el.style.display="none",2600);
+}
+
+function updateUI() {
+  $("crystals").textContent=save.crystals;
+  $("shopCrystals").textContent=save.crystals;
+  $("bestScore").textContent=save.best;
+  $("statsBest").textContent=save.best;
+  $("statsEarned").textContent=save.totalEarned;
+  $("statsWorlds").textContent=unlockedWorldCount();
+  $("statsShips").textContent=save.ownedShips.length;
+  $("menuShip").textContent=SHIPS[save.selectedShip]?.emoji||"🚀";
+}
+
+function unlockedWorldCount() {
+  return WORLDS.filter(w=>save.best>=w.need).length;
+}
+
+/* =========================
+   КОРАБЛИ
+========================= */
+
+function renderShips() {
+  const list=$("shipsList");
+  list.innerHTML="";
+
+  SHIPS.forEach(ship=>{
+    const owned=save.ownedShips.includes(ship.id);
+    const selected=save.selectedShip===ship.id;
+
+    const card=document.createElement("div");
+    card.className="item"+(selected?" selected":"");
+    card.innerHTML=`
+      <div class="emoji">${ship.emoji}</div>
+      <div class="name">${ship.name}</div>
+      <div class="desc">${ship.desc}</div>
+      <div class="pill">${owned?(selected?"Выбран":"Куплен"):"💎 "+ship.price}</div>
+      <button class="secondary" style="width:100%">
+        ${owned?(selected?"Выбран":"Выбрать"):"Купить"}
+      </button>
+    `;
+
+    card.querySelector("button").addEventListener("click",()=>{
+      if (owned) {
+        save.selectedShip=ship.id;
+        saveData();
+        renderShips();
+        updateUI();
+        toast("Корабль выбран!");
+        return;
+      }
+
+      if (save.crystals<ship.price) {
+        toast("Недостаточно кристаллов");
+        return;
+      }
+
+      save.crystals-=ship.price;
+      save.ownedShips.push(ship.id);
+      save.selectedShip=ship.id;
+      saveData();
+      renderShips();
+      updateUI();
+      toast("Новый корабль куплен!");
+    });
+
+    list.appendChild(card);
+  });
+}
+
+/* =========================
+   МИРЫ
+========================= */
+
+function renderWorlds() {
+  const list=$("worldsList");
+  list.innerHTML="";
+
+  WORLDS.forEach(world=>{
+    const unlocked=save.best>=world.need;
+    const selected=save.selectedWorld===world.id;
+
+    const card=document.createElement("div");
+    card.className="item"+(selected?" selected":"");
+    card.innerHTML=`
+      <div class="emoji">${world.emoji}</div>
+      <div class="name">${world.name}</div>
+      <div class="desc">${unlocked?"Мир доступен":"Нужно очков: "+world.need}</div>
+      <div class="pill">${unlocked?(selected?"Выбран":"Открыт"):"🔒 Закрыт"}</div>
+      <button class="secondary" style="width:100%" ${unlocked?"":"disabled"}>
+        ${selected?"Выбран":unlocked?"Выбрать":"Закрыт"}
+      </button>
+    `;
+
+    card.querySelector("button").addEventListener("click",()=>{
+      if (!unlocked) return;
+      save.selectedWorld=world.id;
+      saveData();
+      renderWorlds();
+      toast("Мир выбран!");
+    });
+
+    list.appendChild(card);
+  });
+}
+
+/* =========================
+   ADSGRAM REWARD
+========================= */
+
+const ADSGRAM_BLOCK_ID = "60401";
+let adController = null;
+let adBusy = false;
+let sdkPromise = null;
+
+function loadAdsgram() {
+  if (window.Adsgram) return Promise.resolve(window.Adsgram);
+
+  if (!sdkPromise) {
+    sdkPromise = new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-adsgram="1"]');
+
+      if (existing) {
+        existing.addEventListener("load",()=>resolve(window.Adsgram),{once:true});
+        existing.addEventListener("error",reject,{once:true});
+        if (window.Adsgram) resolve(window.Adsgram);
+        return;
+      }
+
+      const script=document.createElement("script");
+      script.src="https://sad.adsgram.ai/js/sad.min.js";
+      script.async=true;
+      script.dataset.adsgram="1";
+      script.onload=()=>window.Adsgram?resolve(window.Adsgram):reject(new Error("SDK не найден"));
+      script.onerror=()=>reject(new Error("Не удалось загрузить SDK"));
+      document.head.appendChild(script);
+    });
+  }
+
+  return sdkPromise;
+}
+
+async function watchAd() {
+  if (adBusy) return;
+
+  adBusy=true;
+  const button=$("watchAdButton");
+  const status=$("adStatus");
+
+  button.disabled=true;
+  button.textContent="⏳ Загрузка рекламы...";
+  status.textContent="Подготавливаем рекламный блок...";
+
+  try {
+    const Adsgram=await loadAdsgram();
+
+    if (!Adsgram || typeof Adsgram.init!=="function") {
+      throw new Error("AdsGram SDK недоступен");
+    }
+
+    // Контроллер создаётся один раз для этого рекламного блока.
+    if (!adController) {
+      adController=Adsgram.init({blockId:ADSGRAM_BLOCK_ID});
+    }
+
+    button.textContent="⏳ Идёт показ рекламы...";
+    status.textContent="Дождись завершения рекламы для получения награды.";
+
+    const result=await adController.show();
+
+    // Награждаем только за завершённый Reward-показ.
+    if (result && result.done===true && result.error!==true) {
+      save.crystals+=25;
+      save.totalEarned+=25;
+      saveData();
+      updateUI();
+      status.textContent="Награда получена!";
+      toast("🎉 +25 кристаллов!");
+    } else {
+      status.textContent="Просмотр не завершён. Награды нет.";
+      toast("Просмотр не завершён — награды нет");
+    }
+
+  } catch(error) {
+    console.warn("AdsGram:",error);
+    status.textContent="Реклама сейчас недоступна. Попробуй позже.";
+    toast("Не удалось показать рекламу");
+  } finally {
+    adBusy=false;
+    button.disabled=false;
+    button.textContent="▶ Смотреть рекламу · +25 💎";
+  }
+}
+
+$("watchAdButton").addEventListener("click",watchAd);
+
+/* =========================
+   ИГРОВОЙ ПРОЦЕСС
+========================= */
+
+const canvas=$("gameCanvas");
+const ctx=canvas.getContext("2d");
+
+let game={
+  running:false,
+  paused:false,
+  score:0,
+  crystals:0,
+  playerX:0.5,
+  objects:[],
+  stars:[],
+  lastTime:0,
+  spawn:0,
+  animation:0,
+  keys:{left:false,right:false}
+};
+
+let canvasWidth=0;
+let canvasHeight=0;
+
+function resizeCanvas() {
+  const rect=canvas.getBoundingClientRect();
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+
+  canvasWidth=rect.width;
+  canvasHeight=rect.height;
+
+  canvas.width=Math.floor(rect.width*dpr);
+  canvas.height=Math.floor(rect.height*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  if (!game.stars.length) {
+    for(let i=0;i<65;i++) {
+      game.stars.push({
+        x:Math.random()*canvasWidth,
+        y:Math.random()*canvasHeight,
+        s:Math.random()*2+0.5,
+        speed:Math.random()*35+15
+      });
+    }
+  }
+}
+
+window.addEventListener("resize",resizeCanvas);
+
+function startGame() {
+  $("resultModal").classList.add("hidden");
+  $("pauseModal").classList.add("hidden");
+  showScreen("gameScreen");
+  resizeCanvas();
+
+  game.running=true;
+  game.paused=false;
+  game.score=0;
+  game.crystals=0;
+  game.playerX=0.5;
+  game.objects=[];
+  game.spawn=0;
+  game.lastTime=performance.now();
+  game.keys={left:false,right:false};
+
+  $("score").textContent="0";
+  $("runCrystals").textContent="0";
+
+  cancelAnimationFrame(game.animation);
+  game.animation=requestAnimationFrame(loop);
+}
+
+function endGame() {
+  if (!game.running) return;
+
+  game.running=false;
+  cancelAnimationFrame(game.animation);
+
+  const score=Math.floor(game.score);
+  const earned=game.crystals;
+
+  save.crystals+=earned;
+  save.totalEarned+=earned;
+  save.best=Math.max(save.best,score);
+  saveData();
+  updateUI();
+
+  $("finalScore").textContent=score;
+  $("finalCrystals").textContent=earned;
+  $("resultTitle").textContent="Полёт завершён";
+  $("resultModal").classList.remove("hidden");
+}
+
+function pauseGame() {
+  if (!game.running || game.paused) return;
+  game.paused=true;
+  $("pauseModal").classList.remove("hidden");
+}
+
+function resumeGame() {
+  if (!game.running) return;
+  game.paused=false;
+  game.lastTime=performance.now();
+  $("pauseModal").classList.add("hidden");
+  game.animation=requestAnimationFrame(loop);
+}
+
+function movePlayer(direction) {
+  if (!game.running || game.paused) return;
+  game.playerX=Math.max(0.08,Math.min(0.92,game.playerX+direction*0.09));
+}
+
+/* Управление кнопками */
+$("leftButton").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  game.keys.left=true;
+});
+$("rightButton").addEventListener("pointerdown",e=>{
+  e.preventDefault();
+  game.keys.right=true;
+});
+
+["pointerup","pointerleave","pointercancel"].forEach(event=>{
+  $("leftButton").addEventListener(event,()=>game.keys.left=false);
+  $("rightButton").addEventListener(event,()=>game.keys.right=false);
+});
+
+/* Управление касанием по игровому полю */
+let dragging=false;
+
+canvas.addEventListener("pointerdown",e=>{
+  dragging=true;
+  canvas.setPointerCapture(e.pointerId);
+  setPlayerFromPointer(e);
+});
+
+canvas.addEventListener("pointermove",e=>{
+  if (dragging) setPlayerFromPointer(e);
+});
+
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointercancel",()=>dragging=false);
+
+function setPlayerFromPointer(e) {
+  const rect=canvas.getBoundingClientRect();
+  game.playerX=Math.max(0.08,Math.min(0.92,(e.clientX-rect.left)/rect.width));
+}
+
+window.addEventListener("keydown",e=>{
+  if (e.key==="ArrowLeft" || e.key==="a" || e.key==="A") game.keys.left=true;
+  if (e.key==="ArrowRight" || e.key==="d" || e.key==="D") game.keys.right=true;
+  if (e.key==="Escape" && game.running) pauseGame();
+});
+
+window.addEventListener("keyup",e=>{
+  if (e.key==="ArrowLeft" || e.key==="a" || e.key==="A") game.keys.left=false;
+  if (e.key==="ArrowRight" || e.key==="d" || e.key==="D") game.keys.right=false;
+});
+
+function spawnObject() {
+  const isCrystal=Math.random()<0.30;
+  game.objects.push({
+    x:Math.random()*0.86+0.07,
+    y:-0.08,
+    r:isCrystal?11:16+Math.random()*8,
+    speed:150+Math.random()*90+game.score*0.035,
+    type:isCrystal?"crystal":"rock",
+    rotation:Math.random()*6
+  });
+}
+
+function drawBackground(dt) {
+  const world=WORLDS[save.selectedWorld]||WORLDS[0];
+  ctx.fillStyle=world.color;
+  ctx.fillRect(0,0,canvasWidth,canvasHeight);
+
+  for(const star of game.stars) {
+    star.y+=star.speed*dt;
+    if(star.y>canvasHeight) {
+      star.y=0;
+      star.x=Math.random()*canvasWidth;
+    }
+    ctx.globalAlpha=0.4+star.s/4;
+    ctx.fillStyle="#d8eeff";
+    ctx.fillRect(star.x,star.y,star.s,star.s);
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawPlayer() {
+  const x=game.playerX*canvasWidth;
+  const y=canvasHeight-65;
+  const ship=SHIPS[save.selectedShip]||SHIPS[0];
+
+  ctx.save();
+  ctx.shadowColor="#48eaff";
+  ctx.shadowBlur=18;
+  ctx.font="38px Arial";
+  ctx.textAlign="center";
+  ctx.textBaseline="middle";
+  ctx.fillText(ship.emoji,x,y);
+  ctx.restore();
+
+  ctx.fillStyle="#48eaff";
+  ctx.globalAlpha=0.35;
+  ctx.beginPath();
+  ctx.ellipse(x,y+25,8,15,0,0,Math.PI*2);
+  ctx.fill();
+  ctx.globalAlpha=1;
+}
+
+function drawObjects() {
+  for(const obj of game.objects) {
+    ctx.save();
+    ctx.translate(obj.x*canvasWidth,obj.y*canvasHeight);
+    obj.rotation+=0.015;
+
+    if(obj.type==="crystal") {
+      ctx.rotate(Math.PI/4);
+      ctx.shadowColor="#4ceaff";
+      ctx.shadowBlur=15;
+      ctx.fillStyle="#53eaff";
+      ctx.fillRect(-obj.r/2,-obj.r/2,obj.r,obj.r);
+    } else {
+      ctx.rotate(obj.rotation);
+      ctx.fillStyle="#9b8ba8";
+      ctx.strokeStyle="#d2b4d7";
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.arc(0,0,obj.r,0,Math.PI*2);
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+}
+
+function checkCollisions() {
+  const px=game.playerX*canvasWidth;
+  const py=canvasHeight-65;
+
+  for(let i=game.objects.length-1;i>=0;i--) {
+    const obj=game.objects[i];
+    const ox=obj.x*canvasWidth;
+    const oy=obj.y*canvasHeight;
+    const distance=Math.hypot(px-ox,py-oy);
+
+    if(distance<obj.r+19) {
+      if(obj.type==="crystal") {
+        game.crystals++;
+        $("runCrystals").textContent=game.crystals;
+        game.objects.splice(i,1);
+      } else {
+        endGame();
+        return;
+      }
+    }
+  }
+}
+
+function loop(now) {
+  if(!game.running || game.paused) return;
+
+  const dt=Math.min((now-game.lastTime)/1000,0.04);
+  game.lastTime=now;
+
+  if(game.keys.left) movePlayer(-dt*4);
+  if(game.keys.right) movePlayer(dt*4);
+
+  game.score+=dt*10;
+  game.spawn+=dt;
+
+  if(game.spawn>Math.max(0.32,0.85-game.score/2500)) {
+    spawnObject();
+    game.spawn=0;
+  }
+
+  for(const obj of game.objects) {
+    obj.y+=obj.speed*dt/canvasHeight;
+  }
+
+  game.objects=game.objects.filter(obj=>obj.y<1.15);
+
+  drawBackground(dt);
+  drawObjects();
+  drawPlayer();
+  checkCollisions();
+
+  if(!game.running) return;
+
+  $("score").textContent=Math.floor(game.score);
+  game.animation=requestAnimationFrame(loop);
+}
+
+/* КНОПКИ И ДЕЙСТВИЯ */
+
+document.addEventListener("click",e=>{
+  const button=e.target.closest("[data-action]");
+  if(!button) return;
+
+  const action=button.dataset.action;
+
+  switch(action) {
+    case "play":
+      startGame();
+      break;
+    case "home":
+      if(game.running) {
+        game.running=false;
+        cancelAnimationFrame(game.animation);
+      }
+      showScreen("menuScreen");
+      break;
+    case "ships":
+      renderShips();
+      showScreen("shipsScreen");
+      break;
+    case "worlds":
+      renderWorlds();
+      showScreen("worldsScreen");
+      break;
+    case "shop":
+      showScreen("shopScreen");
+      break;
+    case "stats":
+      showScreen("statsScreen");
+      break;
+    case "pause":
+      pauseGame();
+      break;
+  }
+});
+
+$("againButton").addEventListener("click",startGame);
+
+$("resultHome").addEventListener("click",()=>{
+  $("resultModal").classList.add("hidden");
+  showScreen("menuScreen");
+});
+
+$("resumeButton").addEventListener("click",resumeGame);
+
+$("quitButton").addEventListener("click",()=>{
+  game.running=false;
+  cancelAnimationFrame(game.animation);
+  $("pauseModal").classList.add("hidden");
+  showScreen("menuScreen");
+});
+
+/* ЗАПУСК */
+
+updateUI();
+showScreen("menuScreen");
+
+})();
+</script>
+</body>
+</html>
+
