@@ -712,5 +712,392 @@ controlButtons.forEach(([id,direction])=>{
     });
   });
 });
+  /* КЛАВИАТУРА */
+
+window.addEventListener("keydown",e=>{
+  if($("gameScreen").classList.contains("hidden")) return;
+
+  const keys={
+    ArrowLeft:"left",
+    ArrowRight:"right",
+    ArrowUp:"up",
+    ArrowDown:"down",
+    a:"left",
+    d:"right",
+    w:"up",
+    s:"down"
+  };
+
+  const direction=keys[e.key];
+  if(direction){
+    e.preventDefault();
+    game.keys[direction]=true;
+  }
+});
+
+window.addEventListener("keyup",e=>{
+  const keys={
+    ArrowLeft:"left",
+    ArrowRight:"right",
+    ArrowUp:"up",
+    ArrowDown:"down",
+    a:"left",
+    d:"right",
+    w:"up",
+    s:"down"
+  };
+
+  const direction=keys[e.key];
+  if(direction) game.keys[direction]=false;
+});
+
+window.addEventListener("blur",()=>{
+  game.keys={left:false,right:false,up:false,down:false};
+});
+
+/* УПРАВЛЕНИЕ КАСАНИЕМ */
+
+let canvasPointerActive=false;
+
+function moveToPointer(e){
+  const rect=canvas.getBoundingClientRect();
+
+  game.playerX=Math.max(0.08,Math.min(0.92,
+    (e.clientX-rect.left)/rect.width
+  ));
+
+  game.playerY=Math.max(0.12,Math.min(0.85,
+    (e.clientY-rect.top)/rect.height
+  ));
+}
+
+canvas.addEventListener("pointerdown",e=>{
+  if(!game.running || game.paused) return;
+  canvasPointerActive=true;
+  moveToPointer(e);
+});
+
+canvas.addEventListener("pointermove",e=>{
+  if(canvasPointerActive && game.running && !game.paused){
+    moveToPointer(e);
+  }
+});
+
+["pointerup","pointercancel","lostpointercapture"].forEach(event=>{
+  canvas.addEventListener(event,()=>{
+    canvasPointerActive=false;
+  });
+});
+
+/* СОЗДАНИЕ ОБЪЕКТОВ */
+
+function spawnObject(){
+  const isCrystal=Math.random()<0.32;
+
+  game.objects.push({
+    type:isCrystal?"crystal":"rock",
+    x:Math.random()*(canvasWidth-50)+25,
+    y:-30,
+    size:isCrystal?12:18,
+    speed:150+Math.random()*65+game.score*0.25
+  });
+}
+
+/* ДВИЖЕНИЕ И СТОЛКНОВЕНИЯ */
+
+function updateGame(dt){
+  const moveSpeed=0.65;
+
+  if(game.keys.left) game.playerX-=moveSpeed*dt;
+  if(game.keys.right) game.playerX+=moveSpeed*dt;
+  if(game.keys.up) game.playerY-=moveSpeed*dt;
+  if(game.keys.down) game.playerY+=moveSpeed*dt;
+
+  game.playerX=Math.max(0.08,Math.min(0.92,game.playerX));
+  game.playerY=Math.max(0.12,Math.min(0.85,game.playerY));
+
+  game.score+=dt*10;
+  game.spawn+=dt;
+
+  const spawnDelay=Math.max(0.38,0.9-game.score/1800);
+
+  if(game.spawn>=spawnDelay){
+    game.spawn=0;
+    spawnObject();
+  }
+
+  const px=game.playerX*canvasWidth;
+  const py=game.playerY*canvasHeight;
+
+  for(let i=game.objects.length-1;i>=0;i--){
+    const obj=game.objects[i];
+    obj.y+=obj.speed*dt;
+
+    const dx=obj.x-px;
+    const dy=obj.y-py;
+    const distance=Math.sqrt(dx*dx+dy*dy);
+
+    if(obj.type==="crystal" && distance<25){
+      game.crystals++;
+      game.objects.splice(i,1);
+      $("runCrystals").textContent=game.crystals;
+      continue;
+    }
+
+    if(obj.type==="rock" && distance<27){
+      endGame();
+      return;
+    }
+
+    if(obj.y>canvasHeight+40){
+      game.objects.splice(i,1);
+    }
+  }
+
+  game.stars.forEach(star=>{
+    star.y+=star.speed*dt;
+
+    if(star.y>canvasHeight){
+      star.y=0;
+      star.x=Math.random()*canvasWidth;
+    }
+  });
+
+  $("score").textContent=Math.floor(game.score);
+}
+
+/* РИСОВАНИЕ КОРАБЛЯ */
+
+function drawPlayer(){
+  const x=game.playerX*canvasWidth;
+  const y=game.playerY*canvasHeight;
+  const ship=save.selectedShip;
+
+  const colors=[
+    "#48eaff",
+    "#b58aff",
+    "#ffb84d",
+    "#ff5ca8",
+    "#8cffb0"
+  ];
+
+  const color=colors[ship]||colors[0];
+
+  ctx.save();
+  ctx.translate(x,y);
+
+  ctx.shadowColor=color;
+  ctx.shadowBlur=18;
+
+  ctx.fillStyle=color;
+  ctx.strokeStyle="#ffffff";
+  ctx.lineWidth=2;
+
+  ctx.beginPath();
+
+  if(ship===1){
+    ctx.moveTo(0,-20);
+    ctx.lineTo(22,0);
+    ctx.lineTo(12,12);
+    ctx.lineTo(-12,12);
+    ctx.lineTo(-22,0);
+  }else if(ship===2){
+    ctx.moveTo(0,-22);
+    ctx.lineTo(14,8);
+    ctx.lineTo(0,17);
+    ctx.lineTo(-14,8);
+  }else if(ship===3){
+    ctx.moveTo(0,-22);
+    ctx.lineTo(18,13);
+    ctx.lineTo(0,7);
+    ctx.lineTo(-18,13);
+  }else if(ship===4){
+    ctx.moveTo(0,-24);
+    ctx.lineTo(19,-2);
+    ctx.lineTo(13,15);
+    ctx.lineTo(0,9);
+    ctx.lineTo(-13,15);
+    ctx.lineTo(-19,-2);
+  }else{
+    ctx.moveTo(0,-22);
+    ctx.lineTo(17,15);
+    ctx.lineTo(0,8);
+    ctx.lineTo(-17,15);
+  }
+
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur=10;
+  ctx.fillStyle="#ffffff";
+  ctx.beginPath();
+  ctx.arc(0,-3,4,0,Math.PI*2);
+  ctx.fill();
+
+  ctx.shadowBlur=12;
+  ctx.fillStyle="#ffb84d";
+  ctx.beginPath();
+  ctx.moveTo(-5,14);
+  ctx.lineTo(0,25+Math.random()*5);
+  ctx.lineTo(5,14);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* РИСОВАНИЕ ОБЪЕКТОВ */
+
+function drawObjects(){
+  game.objects.forEach(obj=>{
+    ctx.save();
+
+    if(obj.type==="crystal"){
+      ctx.shadowColor="#48eaff";
+      ctx.shadowBlur=15;
+      ctx.fillStyle="#48eaff";
+
+      ctx.translate(obj.x,obj.y);
+      ctx.rotate(Math.PI/4);
+
+      ctx.fillRect(-8,-8,16,16);
+    }else{
+      ctx.shadowColor="#ff5c83";
+      ctx.shadowBlur=10;
+      ctx.fillStyle="#ff5c83";
+
+      ctx.beginPath();
+      ctx.arc(obj.x,obj.y,obj.size,0,Math.PI*2);
+      ctx.fill();
+
+      ctx.strokeStyle="#ffc0d1";
+      ctx.lineWidth=2;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  });
+}
+
+/* ОТРИСОВКА ИГРЫ */
+
+function drawGame(){
+  const world=WORLDS[save.selectedWorld]||WORLDS[0];
+
+  ctx.clearRect(0,0,canvasWidth,canvasHeight);
+  ctx.fillStyle=world.color;
+  ctx.fillRect(0,0,canvasWidth,canvasHeight);
+
+  game.stars.forEach(star=>{
+    ctx.fillStyle="#ffffff";
+    ctx.globalAlpha=0.35+star.s/4;
+    ctx.beginPath();
+    ctx.arc(star.x,star.y,star.s,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.globalAlpha=1;
+
+  drawObjects();
+  drawPlayer();
+}
+
+/* ИГРОВОЙ ЦИКЛ */
+
+function loop(timestamp){
+  if(!game.running || game.paused) return;
+
+  const dt=Math.min((timestamp-game.lastTime)/1000,0.04);
+  game.lastTime=timestamp;
+
+  updateGame(dt);
+
+  if(!game.running) return;
+
+  drawGame();
+
+  game.animation=requestAnimationFrame(loop);
+}
+
+/* ПЕРЕХОД В МЕНЮ */
+
+function goHome(){
+  game.running=false;
+  game.paused=false;
+
+  cancelAnimationFrame(game.animation);
+
+  game.keys={left:false,right:false,up:false,down:false};
+
+  showScreen("menuScreen");
+}
+
+/* КНОПКИ МЕНЮ */
+
+document.addEventListener("click",e=>{
+  const button=e.target.closest("[data-action]");
+  if(!button) return;
+
+  const action=button.dataset.action;
+
+  if(action==="play"){
+    startGame();
+  }
+
+  if(action==="ships"){
+    renderShips();
+    showScreen("shipsScreen");
+  }
+
+  if(action==="worlds"){
+    renderWorlds();
+    showScreen("worldsScreen");
+  }
+
+  if(action==="shop"){
+    showScreen("shopScreen");
+  }
+
+  if(action==="stats"){
+    showScreen("statsScreen");
+  }
+
+  if(action==="home"){
+    goHome();
+  }
+
+  if(action==="pause"){
+    pauseGame();
+  }
+});
+
+/* КНОПКИ РЕЗУЛЬТАТОВ И ПАУЗЫ */
+
+$("againButton").addEventListener("click",()=>{
+  startGame();
+});
+
+$("resultHome").addEventListener("click",()=>{
+  goHome();
+});
+
+$("resumeButton").addEventListener("click",()=>{
+  resumeGame();
+});
+
+$("quitButton").addEventListener("click",()=>{
+  goHome();
+});
+
+/* ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА */
+
+updateUI();
+renderShips();
+renderWorlds();
+
+})();
+</script>
+</body>
+</html>
 
       
