@@ -568,3 +568,146 @@ function renderWorlds() {
 
 function rarityBadge(item){
   const r=RARITIES[item.rarity]||RARITIES.common;
+  return `<span class="rarity ${r.className}">${r.name}</span>`;
+}
+
+function renderCases(){
+  const list=$("casesList");
+  list.innerHTML="";
+  CASES.forEach(box=>{
+    const card=document.createElement("div");
+    card.className="case-card";
+    const chances=Object.entries(box.weights).filter(([,v])=>v>0)
+      .map(([k,v])=>`${RARITIES[k].name}: ${v}%`).join(" · ");
+    card.innerHTML=`<div class="case-art">${box.emoji}</div>
+      <b>${box.name}</b><p class="subtitle">Шансы: ${chances}</p>
+      <div class="pill">💎 ${box.price}</div>
+      <button class="primary" style="margin-top:10px">Открыть</button>`;
+    card.querySelector("button").addEventListener("click",()=>openCase(box));
+    list.appendChild(card);
+  });
+}
+
+function pickCaseItem(box){
+  const roll=Math.random()*100;
+  let total=0, chosen="common";
+  for(const [rarity,weight] of Object.entries(box.weights)){
+    total+=weight;
+    if(roll<total){chosen=rarity;break;}
+  }
+  const pool=ITEMS.filter(item=>item.rarity===chosen);
+  return pool[Math.floor(Math.random()*pool.length)]||ITEMS[0];
+}
+
+function openCase(box){
+  if(save.crystals<box.price){toast("Недостаточно кристаллов для кейса");return;}
+  save.crystals-=box.price;
+  const item=pickCaseItem(box);
+  let message="";
+  if(item.type==="upgrade" && save.collectorLevel<3){
+    save.collectorLevel++;
+    message=`Сборщик улучшен до уровня ${save.collectorLevel}!`;
+  }else if(save.ownedItems.includes(item.id)){
+    const amount=RARITIES[item.rarity].shards;
+    save.shards+=amount;
+    message=`Дубликат обменян на ${amount} осколков.`;
+  }else{
+    save.ownedItems.push(item.id);
+    message="Предмет добавлен в коллекцию!";
+  }
+  saveData();
+  updateUI();
+  const result=$("caseResult");
+  result.classList.remove("hidden");
+  result.innerHTML=`<div style="font-size:48px">${item.emoji}</div>
+    <h2>${item.name}</h2>${rarityBadge(item)}
+    <p class="subtitle">${item.desc}</p><b>${message}</b>
+    <button class="secondary" style="margin-top:12px" id="caseResultClose">Понятно</button>`;
+  $("caseResultClose").addEventListener("click",()=>result.classList.add("hidden"));
+  toast("🎉 Кейс открыт!");
+}
+
+function renderInventory(){
+  const list=$("inventoryList");
+  list.innerHTML="";
+  const items=ITEMS.filter(item=>save.ownedItems.includes(item.id));
+  if(!items.length){
+    list.innerHTML='<div class="panel" style="grid-column:1/-1">Коллекция пока пуста. Открой первый кейс!</div>';
+  }
+  items.forEach(item=>{
+    const equipped=(item.type==="skin" && save.equippedSkin===item.id) ||
+      (item.type==="trail" && save.equippedTrail===item.id);
+    const card=document.createElement("div");
+    card.className="item";
+    card.innerHTML=`<div class="emoji">${item.emoji}</div><div class="name">${item.name}</div>
+      ${rarityBadge(item)}<div class="desc">${item.desc}</div>
+      <button class="secondary" style="width:100%" ${item.type==="upgrade"?"disabled":""}>
+      ${item.type==="upgrade"?"Улучшение":equipped?"Используется":"Экипировать"}</button>`;
+    if(item.type!=="upgrade"){
+      card.querySelector("button").addEventListener("click",()=>{
+        if(item.type==="skin") save.equippedSkin=item.id;
+        if(item.type==="trail") save.equippedTrail=item.id;
+        saveData();renderInventory();updateUI();toast("Предмет экипирован!");
+      });
+    }
+    list.appendChild(card);
+  });
+  $("shardsCount").textContent=save.shards;
+  $("collectorLevel").textContent=save.collectorLevel;
+}
+
+$("upgradeCollectorButton").addEventListener("click",()=>{
+  if(save.collectorLevel>=3){toast("Сборщик уже максимального уровня");return;}
+  if(save.shards<30){toast("Нужно 30 осколков");return;}
+  save.shards-=30;
+  save.collectorLevel++;
+  saveData();renderInventory();updateUI();toast("Сборщик улучшен!");
+});
+
+/* ADSGRAM REWARD */
+
+const ADSGRAM_BLOCK_ID="60401";
+let adController=null;
+let adBusy=false;
+let sdkPromise=null;
+
+function loadAdsgram() {
+  if(window.Adsgram) return Promise.resolve(window.Adsgram);
+
+  if(!sdkPromise) {
+    sdkPromise=new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-adsgram="1"]');
+
+      if(existing) {
+        existing.addEventListener("load",()=>resolve(window.Adsgram),{once:true});
+        existing.addEventListener("error",reject,{once:true});
+        if(window.Adsgram) resolve(window.Adsgram);
+        return;
+      }
+
+      const script=document.createElement("script");
+      script.src="https://sad.adsgram.ai/js/sad.min.js";
+      script.async=true;
+      script.dataset.adsgram="1";
+      script.onload=()=>window.Adsgram?resolve(window.Adsgram):reject(new Error("SDK не найден"));
+      script.onerror=()=>reject(new Error("Не удалось загрузить SDK"));
+      document.head.appendChild(script);
+    });
+  }
+
+  return sdkPromise;
+}
+
+async function watchAd() {
+  if(adBusy) return;
+
+  adBusy=true;
+  const buttons=[$("watchAdButton"),$("watchAdMenuButton")].filter(Boolean);
+  const statuses=[$("adStatus"),$("adMenuStatus")].filter(Boolean);
+  buttons.forEach(button=>{button.disabled=true;button.textContent="⏳ Загрузка рекламы...";});
+  statuses.forEach(status=>status.textContent="Подготавливаем рекламный блок...");
+
+  try {
+    const Adsgram=await loadAdsgram();
+    if(!Adsgram || typeof Adsgram.init!=="function") throw new Error("AdsGram SDK недоступен");
+    if(!adController) adController=Adsgram.init({blockId:ADSGRAM_BLOCK_ID});
