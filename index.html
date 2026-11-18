@@ -1141,3 +1141,144 @@ function drawObjects(){
       ctx.fill();
 
       ctx.strokeStyle="#ffc0d1";
+            ctx.lineWidth=2;
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  });
+}
+
+/* ОТРИСОВКА ИГРЫ */
+
+function drawGame(){
+  const world=WORLDS[save.selectedWorld]||WORLDS[0];
+
+  ctx.clearRect(0,0,canvasWidth,canvasHeight);
+  ctx.fillStyle=world.color;
+  ctx.fillRect(0,0,canvasWidth,canvasHeight);
+
+  game.stars.forEach(star=>{
+    ctx.fillStyle="#ffffff";
+    ctx.globalAlpha=0.35+star.s/4;
+    ctx.beginPath();
+    ctx.arc(star.x,star.y,star.s,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.globalAlpha=1;
+
+  drawObjects();
+  drawPlayer();
+}
+
+/* ИГРОВОЙ ЦИКЛ */
+
+function loop(timestamp){
+  if(!game.running || game.paused) return;
+
+  const dt=Math.min((timestamp-game.lastTime)/1000,0.04);
+  game.lastTime=timestamp;
+
+  updateGame(dt);
+
+  if(!game.running) return;
+
+  drawGame();
+
+  game.animation=requestAnimationFrame(loop);
+}
+
+/* ПЕРЕХОД В МЕНЮ */
+
+function goHome(){
+  game.running=false;
+  game.paused=false;
+
+  cancelAnimationFrame(game.animation);
+
+  game.keys={left:false,right:false,up:false,down:false};
+
+  showScreen("menuScreen");
+}
+
+/* КНОПКИ МЕНЮ */
+
+document.addEventListener("click",e=>{
+  const button=e.target.closest("[data-action]");
+  if(!button) return;
+
+  const action=button.dataset.action;
+
+  if(action==="play"){
+    startGame();
+  }
+
+  if(action==="ships"){
+    renderShips();
+    showScreen("shipsScreen");
+  }
+
+  if(action==="worlds"){
+    renderWorlds();
+    showScreen("worldsScreen");
+  }
+
+  if(action==="shop"){
+    showScreen("shopScreen");
+  }
+
+  if(action==="stats"){
+    showScreen("statsScreen");
+  }
+
+  if(action==="cases"){
+    renderCases();
+    $("caseResult").classList.add("hidden");
+    showScreen("casesScreen");
+  }
+
+  if(action==="inventory"){
+    renderInventory();
+    showScreen("inventoryScreen");
+  }
+
+  if(action==="home"){
+    goHome();
+  }
+
+  if(action==="pause"){
+    pauseGame();
+  }
+});
+
+/* КНОПКИ РЕЗУЛЬТАТОВ И ПАУЗЫ */
+
+$("againButton").addEventListener("click",()=>{
+  startGame();
+});
+
+$("resultHome").addEventListener("click",()=>{
+  goHome();
+});
+
+$("resumeButton").addEventListener("click",()=>{
+  resumeGame();
+});
+
+$("quitButton").addEventListener("click",()=>{
+  goHome();
+});
+
+/* ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА */
+
+updateUI();
+renderShips();
+renderWorlds();
+renderCases();
+renderInventory();
+
+})();
+</script>
+</body>
+</html>
