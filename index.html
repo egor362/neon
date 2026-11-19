@@ -504,11 +504,11 @@ const sfx = (() => {
     if (!ac) return;
 
     const scales = [
-      [110, 146.83, 164.81, 220],   // Синий сектор
-      [98, 130.81, 146.83, 196],     // Красная туманность
-      [123.47, 164.81, 185, 246.94], // Ледяная орбита
-      [110, 164.81, 196, 246.94],    // Звёздный шторм
-      [87.31, 130.81, 174.61, 220]   // Разлом
+      [110, 146.83, 164.81, 220],
+      [98, 130.81, 146.83, 196],
+      [123.47, 164.81, 185, 246.94],
+      [110, 164.81, 196, 246.94],
+      [87.31, 130.81, 174.61, 220]
     ];
     const notes = scales[worldId] || scales[0];
     const note = notes[ambientStep % notes.length];
@@ -647,7 +647,6 @@ const sfx = (() => {
   };
 })();
 
-/* КОРАБЛИ (включая эксклюзивные корабли из кейсов: id 5, 6, 7) */
 const SHIPS = [
   {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
   {id:1,name:"Фантом",emoji:"🛸",price:100,desc:"Лёгкий и быстрый"},
@@ -691,33 +690,27 @@ const ITEMS = [
   {id:"upgrade_collector",name:"Сборщик кристаллов",emoji:"💎",type:"upgrade",rarity:"rare",desc:"Повышает шанс дополнительного кристалла"}
 ];
 
-/* 19 ПРИЗОВ, РАЗДЕЛЁННЫХ НА 5 РЕДКОСТЕЙ */
 const CASE_PRIZES = [
-  // Обычный (common) — 4 приза
   {id:"item_skin_ice",name:"Ледяной корпус",emoji:"❄️",kind:"item",itemRef:ITEMS[0],rarity:"common",desc:"Холодное сияние корпуса"},
   {id:"item_skin_lime",name:"Кислотный неон",emoji:"🟢",kind:"item",itemRef:ITEMS[1],rarity:"common",desc:"Яркий зелёный корпус"},
   {id:"crystals_40",name:"Горсть кристаллов (+40 💎)",emoji:"💠",kind:"crystals",amount:40,rarity:"common",desc:"Начисляет +40 кристаллов на баланс"},
   {id:"shards_10",name:"Малый осколок (+10 ✨)",emoji:"🔹",kind:"shards",amount:10,rarity:"common",desc:"Добавляет +10 осколков в коллекцию"},
 
-  // Необычный (uncommon) — 4 приза
   {id:"item_trail_blue",name:"Синий след",emoji:"💠",kind:"item",itemRef:ITEMS[2],rarity:"uncommon",desc:"Голубой след двигателя"},
   {id:"item_skin_purple",name:"Плазма",emoji:"🟣",kind:"item",itemRef:ITEMS[3],rarity:"uncommon",desc:"Плазменный корпус"},
   {id:"bonus_score_boost",name:"Ускоритель очков (+15%)",emoji:"⚡",kind:"bonus",bonusKey:"scoreMult",step:0.15,maxVal:0.75,rarity:"uncommon",desc:"Постоянно увеличивает прирост очков в полёте на +15%"},
   {id:"shards_25",name:"Ядро осколков (+25 ✨)",emoji:"🔮",kind:"shards",amount:25,rarity:"uncommon",desc:"Добавляет +25 осколков для улучшения сборщика"},
 
-  // Редкий (rare) — 4 приза
   {id:"ship_valkyrie",name:"Корабль Валькирия",emoji:"🛰️",kind:"ship",shipId:5,rarity:"rare",desc:"Красивый корабль-разведчик добавлен в ангар!"},
   {id:"item_trail_pink",name:"Розовый импульс",emoji:"💗",kind:"item",itemRef:ITEMS[4],rarity:"rare",desc:"Розовый след двигателя"},
   {id:"item_skin_gold",name:"Золотой реликт",emoji:"🌟",kind:"item",itemRef:ITEMS[5],rarity:"rare",desc:"Золотое покрытие"},
   {id:"bonus_magnet",name:"Магнит кристаллов",emoji:"🧲",kind:"bonus",bonusKey:"magnetLevel",step:1,maxVal:3,rarity:"rare",desc:"Увеличивает радиус притяжения кристаллов в полёте"},
 
-  // Эпический (epic) — 4 приза
   {id:"ship_aurora",name:"Корабль Аврора",emoji:"✨",kind:"ship",shipId:6,rarity:"epic",desc:"Сверкающий звёздный крейсер добавлен в ангар!"},
   {id:"item_trail_lightning",name:"Молния",emoji:"⚡",kind:"item",itemRef:ITEMS[6],rarity:"epic",desc:"Электрический след"},
   {id:"item_skin_void",name:"Пустотный",emoji:"🌑",kind:"item",itemRef:ITEMS[7],rarity:"epic",desc:"Корпус из энергии разлома"},
   {id:"bonus_shield",name:"Энергощит",emoji:"🛡️",kind:"bonus",bonusKey:"shields",step:1,maxVal:3,rarity:"epic",desc:"Спасает от 1 столкновения с астероидом в полёте"},
 
-  // Легендарный (legendary) — 3 приза
   {id:"ship_chronos",name:"Корабль Хронос",emoji:"🪐",kind:"ship",shipId:7,rarity:"legendary",desc:"Легендарный корабль повелителя разломов!"},
   {id:"item_skin_galaxy",name:"Галактика",emoji:"🌌",kind:"item",itemRef:ITEMS[8],rarity:"legendary",desc:"Легендарное звёздное сияние"},
   {id:"item_trail_rift",name:"След разлома",emoji:"🌀",kind:"item",itemRef:ITEMS[9],rarity:"legendary",desc:"Редкий след энергии разлома"}
@@ -918,7 +911,6 @@ function updateUI() {
   renderBonusesBox();
 }
 
-/* КОРАБЛИ */
 function renderShips() {
   const list = $("shipsList");
   if (!list) return;
@@ -984,7 +976,6 @@ function renderShips() {
   });
 }
 
-/* МИРЫ */
 function renderWorlds() {
   const list = $("worldsList");
   if (!list) return;
@@ -1020,7 +1011,6 @@ function renderWorlds() {
   });
 }
 
-/* КЕЙСЫ, РУЛЕТКА И КОЛЛЕКЦИЯ */
 let caseSpinning = false;
 
 function rarityBadge(rarityKey) {
@@ -1282,7 +1272,6 @@ if (upgradeBtn) {
   });
 }
 
-/* ADSGRAM REWARD */
 const ADSGRAM_BLOCK_ID = "60401";
 let adController = null;
 let adBusy = false;
@@ -1355,7 +1344,6 @@ async function watchAd() {
 if ($("watchAdButton")) $("watchAdButton").addEventListener("click", watchAd);
 if ($("watchAdMenuButton")) $("watchAdMenuButton").addEventListener("click", watchAd);
 
-/* ИГРА */
 const canvas = $("gameCanvas");
 const ctx = canvas ? canvas.getContext("2d") : null;
 
@@ -1815,18 +1803,27 @@ function handleAction(action) {
   if (action === "pause") pauseGame();
 }
 
+let lastActionTime = 0;
+function triggerAction(action) {
+  if (!action) return;
+  const now = performance.now();
+  if (now - lastActionTime < 180) return;
+  lastActionTime = now;
+  handleAction(action);
+}
+
 document.addEventListener("click", e => {
   const button = e.target.closest("[data-action]");
-  if (!button) return;
-  handleAction(button.dataset.action);
+  if (!button || button.disabled) return;
+  triggerAction(button.dataset.action);
 });
 
-document.querySelectorAll("[data-action]").forEach(button => {
-  button.addEventListener("touchend", e => {
-    if (e && e.cancelable) e.preventDefault();
-    handleAction(button.dataset.action);
-  }, {passive:false});
-});
+document.addEventListener("touchend", e => {
+  const button = e.target.closest("[data-action]");
+  if (!button || button.disabled) return;
+  if (e && e.cancelable) e.preventDefault();
+  triggerAction(button.dataset.action);
+}, {passive:false});
 
 if ($("againButton")) $("againButton").addEventListener("click", startGame);
 if ($("resultHome")) $("resultHome").addEventListener("click", goHome);
