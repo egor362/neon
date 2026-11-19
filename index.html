@@ -72,8 +72,12 @@ h2 {font-size:22px;margin:8px 0 16px}
   background:radial-gradient(circle at 50% 35%,#293d77,#121a35 70%);
 }
 .ship-art {
-  font-size:76px;margin:12px 0;
+  height:84px;margin:12px auto;
+  display:flex;align-items:center;justify-content:center;
   filter:drop-shadow(0 0 18px #48eaff99);
+}
+.ship-svg-card {
+  width:68px;height:68px;margin:6px auto;display:block;
 }
 .primary {
   width:100%;padding:16px;border-radius:14px;
@@ -164,6 +168,68 @@ h2 {font-size:22px;margin:8px 0 16px}
 .case-art {font-size:48px;margin:8px}
 .reward-reveal {border:1px solid #6079ad;background:#1c2b50;border-radius:16px;padding:18px;margin:12px 0;text-align:center}
 
+/* РУЛЕТКА КЕЙСОВ */
+.roulette-box {
+  position:relative;
+  overflow:hidden;
+  border:2px solid #48eaff88;
+  background:#0a1026;
+  border-radius:16px;
+  padding:14px 0;
+  margin:14px 0;
+  box-shadow:inset 0 0 24px #000a;
+}
+.roulette-line {
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:50%;
+  width:3px;
+  transform:translateX(-50%);
+  background:linear-gradient(180deg,#ffe58b,#ff5ca8,#ffe58b);
+  box-shadow:0 0 12px #ff5ca8;
+  z-index:3;
+  pointer-events:none;
+}
+.roulette-line::before {
+  content:"▼";
+  position:absolute;
+  top:-3px;
+  left:50%;
+  transform:translateX(-50%);
+  color:#ffe58b;
+  font-size:14px;
+  text-shadow:0 0 8px #000;
+}
+.roulette-strip {
+  display:flex;
+  gap:10px;
+  padding:0 12px;
+  will-change:transform;
+  transform:translateX(0px);
+}
+.roulette-card {
+  flex:0 0 92px;
+  height:110px;
+  border-radius:13px;
+  background:#152040;
+  border:1px solid #354b7a;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:6px;
+  text-align:center;
+}
+.roulette-card.win {
+  border:2px solid #ffe58b;
+  background:#223564;
+  box-shadow:0 0 18px #ffe58b77;
+}
+.roulette-card .r-ico {font-size:30px;line-height:1.1}
+.roulette-card .r-title {font-size:11px;font-weight:bold;margin-top:6px;line-height:1.15;color:#f3f5ff}
+.roulette-card .r-tag {font-size:9px;font-weight:bold;margin-top:3px;opacity:.92}
+
 .footer {text-align:center;color:#7180a7;font-size:11px;margin:25px 0 10px}
 </style>
 </head>
@@ -183,7 +249,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 <section id="menuScreen">
   <div class="panel hero">
     <div class="pill">КОСМИЧЕСКОЕ ПРИКЛЮЧЕНИЕ</div>
-    <div class="ship-art" id="menuShip">🚀</div>
+    <div class="ship-art" id="menuShip"></div>
     <h1>RIFT RUNNER</h1>
     <p class="subtitle">Пролетай через разломы, собирай кристаллы и исследуй новые миры.</p>
     <button class="primary" data-action="play">▶ ИГРАТЬ</button>
@@ -249,13 +315,25 @@ h2 {font-size:22px;margin:8px 0 16px}
   <button class="secondary back" data-action="home">← Назад</button>
   <h2>🎁 Космические кейсы</h2>
   <p class="subtitle">Открывай кейсы за игровые кристаллы. Шансы выпадения показаны заранее.</p>
+
+  <div class="panel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b id="rouletteLabel">Рулетка кейса</b>
+      <span class="pill" id="rouletteCost">Выбери кейс</span>
+    </div>
+    <div class="roulette-box" id="rouletteBox">
+      <div class="roulette-line"></div>
+      <div class="roulette-strip" id="rouletteStrip"></div>
+    </div>
+    <div id="caseResult" class="reward-reveal hidden"></div>
+  </div>
+
   <div class="cards" id="casesList"></div>
   <div class="panel">
     <b>Редкости предметов</b>
     <p><span class="rarity r-common">Обычный</span> <span class="rarity r-uncommon">Необычный</span></p>
     <p><span class="rarity r-rare">Редкий</span> <span class="rarity r-epic">Эпический</span> <span class="rarity r-legendary">Легендарный</span></p>
   </div>
-  <div id="caseResult" class="reward-reveal hidden"></div>
 </section>
 
 <!-- КОЛЛЕКЦИЯ -->
@@ -303,7 +381,7 @@ h2 {font-size:22px;margin:8px 0 16px}
   <p class="subtitle" style="text-align:center">Управляй кораблём в четырёх направлениях, уклоняйся от препятствий и собирай кристаллы.</p>
 </section>
 
-<div class="footer">RIFT RUNNER · версия 4.0</div>
+<div class="footer">RIFT RUNNER · версия 4.2</div>
 </div>
 
 <div id="toast"></div>
@@ -343,6 +421,7 @@ if (tg) {
 const sfx = (() => {
   let ctx = null;
   let enabled = true;
+  let spinTimer = null;
 
   function ensureCtx() {
     if (!enabled) return null;
@@ -377,6 +456,7 @@ const sfx = (() => {
 
   function setEnabled(val) {
     enabled = Boolean(val);
+    if (!enabled) stopSpinTicks();
   }
 
   function click() {
@@ -388,7 +468,34 @@ const sfx = (() => {
     playTone(1180, 1520, 0.11, "triangle", 0.06, 0.045);
   }
 
+  function stopSpinTicks() {
+    if (spinTimer) {
+      clearTimeout(spinTimer);
+      spinTimer = null;
+    }
+  }
+
+  function startSpinTicks(durationMs = 2500) {
+    stopSpinTicks();
+    if (!enabled) return;
+    const start = performance.now();
+    let idx = 0;
+    const step = () => {
+      if (!enabled) return;
+      const elapsed = performance.now() - start;
+      if (elapsed >= durationMs) return;
+      const p = elapsed / durationMs;
+      const delay = 55 + Math.pow(p, 2.2) * 230;
+      const pitch = 430 + (idx % 4) * 50 - p * 80;
+      playTone(Math.max(180, pitch), null, 0.032, "square", 0.024);
+      idx++;
+      spinTimer = setTimeout(step, delay);
+    };
+    step();
+  }
+
   function caseOpen() {
+    stopSpinTicks();
     playTone(440, 660, 0.1, "triangle", 0.08, 0);
     playTone(660, 880, 0.12, "triangle", 0.08, 0.09);
     playTone(880, 1174, 0.18, "sine", 0.09, 0.18);
@@ -399,15 +506,15 @@ const sfx = (() => {
     playTone(170, 52, 0.42, "triangle", 0.09, 0.08);
   }
 
-  return { ensureCtx, setEnabled, click, crystal, caseOpen, gameOver };
+  return { ensureCtx, setEnabled, click, crystal, startSpinTicks, stopSpinTicks, caseOpen, gameOver };
 })();
 
 const SHIPS = [
-  {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
-  {id:1,name:"Фантом",emoji:"🛸",price:100,desc:"Лёгкий и быстрый"},
-  {id:2,name:"Комета",emoji:"☄️",price:200,desc:"Для дальних путешествий"},
-  {id:3,name:"Неон",emoji:"🌠",price:350,desc:"Корабль исследователей"},
-  {id:4,name:"Рифт",emoji:"🚀",price:500,desc:"Редкий космический корабль"}
+  {id:0,name:"Старт",price:0,desc:"Начальный корабль"},
+  {id:1,name:"Фантом",price:100,desc:"Лёгкий и быстрый"},
+  {id:2,name:"Комета",price:200,desc:"Для дальних путешествий"},
+  {id:3,name:"Неон",price:350,desc:"Корабль исследователей"},
+  {id:4,name:"Рифт",price:500,desc:"Редкий космический корабль"}
 ];
 
 const WORLDS = [
@@ -419,11 +526,11 @@ const WORLDS = [
 ];
 
 const RARITIES = {
-  common:{name:"Обычный",className:"r-common",shards:5},
-  uncommon:{name:"Необычный",className:"r-uncommon",shards:10},
-  rare:{name:"Редкий",className:"r-rare",shards:20},
-  epic:{name:"Эпический",className:"r-epic",shards:35},
-  legendary:{name:"Легендарный",className:"r-legendary",shards:60}
+  common:{name:"Обычный",className:"r-common",color:"#d9e0ef",shards:5},
+  uncommon:{name:"Необычный",className:"r-uncommon",color:"#8dffc1",shards:10},
+  rare:{name:"Редкий",className:"r-rare",color:"#91c8ff",shards:20},
+  epic:{name:"Эпический",className:"r-epic",color:"#e1b4ff",shards:35},
+  legendary:{name:"Легендарный",className:"r-legendary",color:"#ffe19a",shards:60}
 };
 
 const ITEMS = [
@@ -509,6 +616,31 @@ loadSave();
 
 const $ = id => document.getElementById(id);
 
+function getShipColor(shipId) {
+  const colors = ["#48eaff", "#b58aff", "#ffb84d", "#ff5ca8", "#8cffb0"];
+  const equipped = ITEMS.find(item => item.id === save.equippedSkin);
+  return equipped?.color || colors[shipId] || colors[0];
+}
+
+function getShipPath(shipId) {
+  if (shipId === 1) return "M 34 8 L 60 32 L 46 50 L 22 50 L 8 32 Z";
+  if (shipId === 2) return "M 34 8 L 50 40 L 34 56 L 18 40 Z";
+  if (shipId === 3) return "M 34 8 L 54 50 L 34 38 L 14 50 Z";
+  if (shipId === 4) return "M 34 6 L 55 28 L 47 52 L 34 42 L 21 52 L 13 28 Z";
+  return "M 34 8 L 53 50 L 34 38 L 15 50 Z";
+}
+
+function renderShipSvg(shipId, sizeClass = "ship-svg-card") {
+  const color = getShipColor(shipId);
+  const path = getShipPath(shipId);
+  return `
+    <svg class="${sizeClass}" viewBox="0 0 68 68" aria-hidden="true">
+      <path d="${path}" fill="${color}" stroke="#ffffff" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="34" cy="27" r="4" fill="#ffffff"/>
+    </svg>
+  `;
+}
+
 function updateSoundButton() {
   const btn = $("soundToggleButton");
   if (!btn) return;
@@ -568,7 +700,7 @@ function updateUI() {
   $("statsEarned").textContent = save.totalEarned;
   $("statsWorlds").textContent = unlockedWorldCount();
   $("statsShips").textContent = save.ownedShips.length;
-  $("menuShip").textContent = SHIPS[save.selectedShip]?.emoji || "🚀";
+  $("menuShip").innerHTML = renderShipSvg(save.selectedShip, "ship-svg-card");
   $("shardsCount").textContent = save.shards;
   $("collectorLevel").textContent = save.collectorLevel;
   updateSoundButton();
@@ -586,7 +718,7 @@ function renderShips() {
     card.className = "item" + (selected ? " selected" : "");
 
     card.innerHTML = `
-      <div class="emoji">${ship.emoji}</div>
+      ${renderShipSvg(ship.id, "ship-svg-card")}
       <div class="name">${ship.name}</div>
       <div class="desc">${ship.desc}</div>
       <div class="pill">${owned ? (selected ? "Выбран" : "Куплен") : "💎 " + ship.price}</div>
@@ -661,9 +793,17 @@ function renderWorlds() {
   });
 }
 
+let spinningCase = false;
+
 function rarityBadge(item) {
   const r = RARITIES[item.rarity] || RARITIES.common;
   return `<span class="rarity ${r.className}">${r.name}</span>`;
+}
+
+function setCaseButtonsDisabled(disabled) {
+  document.querySelectorAll("#casesList button").forEach(btn => {
+    btn.disabled = disabled;
+  });
 }
 
 function renderCases() {
@@ -677,7 +817,7 @@ function renderCases() {
     card.innerHTML = `<div class="case-art">${box.emoji}</div>
       <b>${box.name}</b><p class="subtitle">Шансы: ${chances}</p>
       <div class="pill">💎 ${box.price}</div>
-      <button class="primary" type="button" style="margin-top:10px">Открыть</button>`;
+      <button class="primary" type="button" style="margin-top:10px" ${spinningCase ? "disabled" : ""}>Открыть</button>`;
     card.querySelector("button").addEventListener("click", () => openCase(box));
     list.appendChild(card);
   });
@@ -694,41 +834,109 @@ function pickCaseItem(box) {
   return pool[Math.floor(Math.random() * pool.length)] || ITEMS[0];
 }
 
+function buildRouletteTape(box, winnerItem) {
+  const strip = $("rouletteStrip");
+  const totalCards = 28;
+  const winIdx = 22;
+
+  strip.style.transition = "none";
+  strip.style.transform = "translateX(0px)";
+  strip.innerHTML = "";
+
+  for (let i = 0; i < totalCards; i++) {
+    const item = i === winIdx ? winnerItem : pickCaseItem(box);
+    const r = RARITIES[item.rarity] || RARITIES.common;
+    const card = document.createElement("div");
+    card.className = "roulette-card";
+    card.style.borderColor = r.color;
+    card.innerHTML = `
+      <div class="r-ico">${item.emoji}</div>
+      <div class="r-title">${item.name}</div>
+      <div class="r-tag" style="color:${r.color}">${r.name}</div>
+    `;
+    strip.appendChild(card);
+  }
+
+  const sample = strip.querySelector(".roulette-card");
+  const cardSpan = (sample ? sample.getBoundingClientRect().width : 92) + 10;
+  return { cardSpan, winIdx };
+}
+
 function openCase(box) {
+  if (spinningCase) return;
   sfx.ensureCtx();
   if (save.crystals < box.price) {
     sfx.click();
     toast("Недостаточно кристаллов для кейса");
     return;
   }
-  sfx.caseOpen();
+
+  spinningCase = true;
+  setCaseButtonsDisabled(true);
+  sfx.click();
+  sfx.startSpinTicks(2500);
+
   save.crystals -= box.price;
-  const item = pickCaseItem(box);
-  let message = "";
-  if (item.type === "upgrade" && save.collectorLevel < 3) {
-    save.collectorLevel++;
-    message = `Сборщик улучшен до уровня ${save.collectorLevel}!`;
-  } else if (save.ownedItems.includes(item.id)) {
-    const amount = RARITIES[item.rarity].shards;
-    save.shards += amount;
-    message = `Дубликат обменян на ${amount} осколков.`;
-  } else {
-    save.ownedItems.push(item.id);
-    message = "Предмет добавлен в коллекцию!";
-  }
   saveData();
   updateUI();
+
+  $("rouletteLabel").textContent = "Крутится: " + box.name;
+  $("rouletteCost").textContent = "💎 " + box.price;
   const result = $("caseResult");
-  result.classList.remove("hidden");
-  result.innerHTML = `<div style="font-size:48px">${item.emoji}</div>
-    <h2>${item.name}</h2>${rarityBadge(item)}
-    <p class="subtitle">${item.desc}</p><b>${message}</b>
-    <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Понятно</button>`;
-  $("caseResultClose").addEventListener("click", () => {
-    sfx.click();
-    result.classList.add("hidden");
+  result.classList.add("hidden");
+
+  const winnerItem = pickCaseItem(box);
+  const { cardSpan, winIdx } = buildRouletteTape(box, winnerItem);
+
+  const boxEl = $("rouletteBox");
+  const boxWidth = boxEl ? boxEl.clientWidth : 340;
+  const jitter = (Math.random() - 0.5) * 20;
+  const targetX = Math.max(0, winIdx * cardSpan + (cardSpan - 10) / 2 - boxWidth / 2 + jitter);
+
+  const strip = $("rouletteStrip");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      strip.style.transition = "transform 2.5s cubic-bezier(0.12, 0.82, 0.22, 1)";
+      strip.style.transform = `translateX(-${targetX}px)`;
+    });
   });
-  toast("🎉 Кейс открыт!");
+
+  setTimeout(() => {
+    const cards = strip.querySelectorAll(".roulette-card");
+    if (cards[winIdx]) cards[winIdx].classList.add("win");
+
+    let message = "";
+    if (winnerItem.type === "upgrade" && save.collectorLevel < 3) {
+      save.collectorLevel++;
+      message = `Сборщик улучшен до уровня ${save.collectorLevel}!`;
+    } else if (save.ownedItems.includes(winnerItem.id)) {
+      const amount = RARITIES[winnerItem.rarity].shards;
+      save.shards += amount;
+      message = `Дубликат обменян на ${amount} осколков.`;
+    } else {
+      save.ownedItems.push(winnerItem.id);
+      message = "Предмет добавлен в коллекцию!";
+    }
+
+    saveData();
+    updateUI();
+    renderShips();
+    sfx.caseOpen();
+
+    result.classList.remove("hidden");
+    result.innerHTML = `<div style="font-size:48px">${winnerItem.emoji}</div>
+      <h2>${winnerItem.name}</h2>${rarityBadge(winnerItem)}
+      <p class="subtitle">${winnerItem.desc}</p><b>${message}</b>
+      <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Понятно</button>`;
+    $("caseResultClose").addEventListener("click", () => {
+      sfx.click();
+      result.classList.add("hidden");
+    });
+
+    toast("🎉 Кейс открыт!");
+    spinningCase = false;
+    setCaseButtonsDisabled(false);
+  }, 2600);
 }
 
 function renderInventory() {
@@ -753,7 +961,7 @@ function renderInventory() {
         sfx.click();
         if (item.type === "skin") save.equippedSkin = item.id;
         if (item.type === "trail") save.equippedTrail = item.id;
-        saveData(); renderInventory(); updateUI(); toast("Предмет экипирован!");
+        saveData(); renderInventory(); renderShips(); updateUI(); toast("Предмет экипирован!");
       });
     }
     list.appendChild(card);
@@ -1125,10 +1333,8 @@ function drawPlayer() {
   const y = game.playerY * canvasHeight;
   const ship = save.selectedShip;
 
-  const colors = ["#48eaff", "#b58aff", "#ffb84d", "#ff5ca8", "#8cffb0"];
-  const equipped = ITEMS.find(item => item.id === save.equippedSkin);
   const trail = ITEMS.find(item => item.id === save.equippedTrail);
-  const color = equipped?.color || colors[ship] || colors[0];
+  const color = getShipColor(ship);
 
   ctx.save();
   ctx.translate(x, y);
