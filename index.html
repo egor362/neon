@@ -1,5 +1,3 @@
-
-```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -8,9 +6,8 @@
 <meta name="theme-color" content="#080b1b">
 <title>RIFT RUNNER</title>
 
-<!-- Асинхронная загрузка внешних SDK, чтобы блокировщики рекламы или медленная сеть не останавливали запуск игры -->
 <script src="https://telegram.org/js/telegram-web-app.js" async></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js" async data-adsgram="1"></script>
+<script src="https://sad.adsgram.ai/js/sad.min.js" async></script>
 
 <style>
 :root {
@@ -22,10 +19,7 @@
   --text:#f3f5ff;
   --muted:#9ba8cc;
 }
-* {
-  box-sizing:border-box;
-  -webkit-tap-highlight-color:transparent;
-}
+* {box-sizing:border-box}
 body {
   margin:0;
   background:radial-gradient(ellipse at top,#18234a,#080b1b 65%);
@@ -43,16 +37,8 @@ button {
   font-weight:bold;
   cursor:pointer;
   touch-action:manipulation;
-  user-select:none;
-  -webkit-user-select:none;
 }
-button:active:not(:disabled) {
-  transform:scale(0.97);
-}
-button:disabled {
-  opacity:.5;
-  cursor:default;
-}
+button:disabled {opacity:.5;cursor:default}
 #app {max-width:520px;margin:auto;padding:16px;min-height:100vh}
 .topbar {
   display:flex;justify-content:space-between;align-items:center;
@@ -126,25 +112,21 @@ h2 {font-size:22px;margin:8px 0 16px}
 }
 .game-controls {
   display:grid;
-  grid-template-columns:repeat(3,64px);
-  grid-template-rows:repeat(2,54px);
-  gap:10px;
+  grid-template-columns:repeat(3,58px);
+  grid-template-rows:repeat(2,50px);
+  gap:8px;
   justify-content:center;
-  margin:14px auto;
+  margin:12px auto;
 }
 .game-controls button {
   padding:5px;
   border-radius:14px;
-  font-size:24px;
+  font-size:23px;
   background:linear-gradient(145deg,#263e70,#111d3d);
   border:1px solid #48eaff88;
   box-shadow:0 0 13px #48eaff22;
   touch-action:none;
-}
-.game-controls button.pressed {
-  background:linear-gradient(145deg,#3b62ad,#1b3166);
-  border-color:#48eaff;
-  transform:scale(0.94);
+  -webkit-touch-callout:none;
 }
 #leftButton {grid-column:1;grid-row:2}
 #upButton {grid-column:2;grid-row:1}
@@ -155,7 +137,6 @@ h2 {font-size:22px;margin:8px 0 16px}
   background:#202e50;border:1px solid #4a6295;color:white;
   padding:12px 18px;border-radius:12px;z-index:20;
   display:none;max-width:90%;text-align:center;
-  pointer-events:none;
 }
 .modal {
   position:fixed;inset:0;background:#050817dd;z-index:10;
@@ -193,18 +174,18 @@ h2 {font-size:22px;margin:8px 0 16px}
     <div class="ship-art" id="menuShip">🚀</div>
     <h1>RIFT RUNNER</h1>
     <p class="subtitle">Пролетай через разломы, собирай кристаллы и исследуй новые миры.</p>
-    <button type="button" class="primary" data-action="play">▶ ИГРАТЬ</button>
-    <button type="button" class="ad-button" id="watchAdMenuButton" style="margin-top:10px">▶ Смотреть рекламу · +25 💎</button>
+    <button class="primary" type="button" data-action="play">▶ ИГРАТЬ</button>
+    <button class="ad-button" id="watchAdMenuButton" type="button" style="margin-top:10px">▶ Смотреть рекламу · +25 💎</button>
     <p class="subtitle" id="adMenuStatus" style="margin:9px 0 0">Добровольный просмотр за игровые кристаллы.</p>
   </div>
 
   <div class="button-grid">
-    <button type="button" class="secondary" data-action="ships">🚀 Корабли</button>
-    <button type="button" class="secondary" data-action="worlds">🌌 Миры</button>
-    <button type="button" class="secondary" data-action="shop">💎 Магазин</button>
-    <button type="button" class="secondary" data-action="stats">🏆 Результаты</button>
-    <button type="button" class="secondary" data-action="cases">🎁 Кейсы</button>
-    <button type="button" class="secondary" data-action="inventory">🎒 Коллекция</button>
+    <button class="secondary" type="button" data-action="ships">🚀 Корабли</button>
+    <button class="secondary" type="button" data-action="worlds">🌌 Миры</button>
+    <button class="secondary" type="button" data-action="shop">💎 Магазин</button>
+    <button class="secondary" type="button" data-action="stats">🏆 Результаты</button>
+    <button class="secondary" type="button" data-action="cases">🎁 Кейсы</button>
+    <button class="secondary" type="button" data-action="inventory">🎒 Коллекция</button>
   </div>
 
   <div class="panel">
@@ -218,7 +199,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 
 <!-- КОРАБЛИ -->
 <section id="shipsScreen" class="hidden">
-  <button type="button" class="secondary back" data-action="home">← Назад</button>
+  <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🚀 Выбор корабля</h2>
   <p class="subtitle">Выбери корабль для своего путешествия.</p>
   <div class="cards" id="shipsList"></div>
@@ -226,7 +207,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 
 <!-- МИРЫ -->
 <section id="worldsScreen" class="hidden">
-  <button type="button" class="secondary back" data-action="home">← Назад</button>
+  <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🌌 Космические миры</h2>
   <p class="subtitle">Новые миры открываются после достижения нужного результата.</p>
   <div class="cards" id="worldsList"></div>
@@ -234,26 +215,26 @@ h2 {font-size:22px;margin:8px 0 16px}
 
 <!-- МАГАЗИН -->
 <section id="shopScreen" class="hidden">
-  <button type="button" class="secondary back" data-action="home">← Назад</button>
+  <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>💎 Магазин</h2>
   <div class="panel">
     <h2>💎 <span id="shopCrystals">0</span></h2>
     <p class="subtitle">Смотри Reward-рекламу и получай кристаллы.</p>
-    <button type="button" class="ad-button" id="watchAdButton">▶ Смотреть рекламу · +25 💎</button>
+    <button class="ad-button" id="watchAdButton" type="button">▶ Смотреть рекламу · +25 💎</button>
     <p class="subtitle" id="adStatus" style="text-align:center">Награда выдаётся за завершённый просмотр.</p>
   </div>
   <div class="panel">
     <b>На что потратить кристаллы?</b>
     <p class="subtitle">Покупай новые корабли и открывай дополнительные возможности.</p>
-    <button type="button" class="secondary" data-action="ships">🚀 Перейти к кораблям</button>
-    <button type="button" class="secondary" data-action="cases" style="margin-top:10px">🎁 Открыть кейсы</button>
-    <button type="button" class="secondary" data-action="inventory" style="margin-top:10px">🎒 Моя коллекция</button>
+    <button class="secondary" type="button" data-action="ships">🚀 Перейти к кораблям</button>
+    <button class="secondary" type="button" data-action="cases" style="margin-top:10px">🎁 Открыть кейсы</button>
+    <button class="secondary" type="button" data-action="inventory" style="margin-top:10px">🎒 Моя коллекция</button>
   </div>
 </section>
 
 <!-- КЕЙСЫ -->
 <section id="casesScreen" class="hidden">
-  <button type="button" class="secondary back" data-action="home">← Назад</button>
+  <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🎁 Космические кейсы</h2>
   <p class="subtitle">Открывай кейсы за игровые кристаллы. Шансы выпадения показаны заранее.</p>
   <div class="cards" id="casesList"></div>
@@ -267,20 +248,20 @@ h2 {font-size:22px;margin:8px 0 16px}
 
 <!-- КОЛЛЕКЦИЯ -->
 <section id="inventoryScreen" class="hidden">
-  <button type="button" class="secondary back" data-action="home">← Назад</button>
+  <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🎒 Моя коллекция</h2>
   <div class="panel">
     <b>✨ Осколки: <span id="shardsCount">0</span></b>
     <p class="subtitle">Повторные предметы превращаются в осколки. Улучшение сборщика повышает шанс получить дополнительный кристалл во время полёта.</p>
     <p>Уровень сборщика: <b id="collectorLevel">0</b> / 3</p>
-    <button type="button" class="secondary" id="upgradeCollectorButton">Улучшить сборщик · 30 осколков</button>
+    <button class="secondary" id="upgradeCollectorButton" type="button">Улучшить сборщик · 30 осколков</button>
   </div>
   <div class="cards" id="inventoryList"></div>
 </section>
 
 <!-- РЕЗУЛЬТАТЫ -->
 <section id="statsScreen" class="hidden">
-  <button type="button" class="secondary back" data-action="home">← Назад</button>
+  <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🏆 Результаты</h2>
   <div class="panel">
     <p>Лучший результат: <b id="statsBest">0</b></p>
@@ -293,7 +274,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 <!-- ИГРА -->
 <section id="gameScreen" class="hidden">
   <div class="game-head">
-    <button type="button" class="secondary" style="padding:9px 13px;width:auto" data-action="pause">Ⅱ Пауза</button>
+    <button class="secondary" type="button" style="padding:9px 13px" data-action="pause">Ⅱ Пауза</button>
     <div class="game-stat">Очки: <b id="score">0</b></div>
     <div class="game-stat">💎 <b id="runCrystals">0</b></div>
   </div>
@@ -301,13 +282,13 @@ h2 {font-size:22px;margin:8px 0 16px}
   <canvas id="gameCanvas"></canvas>
 
   <div class="game-controls">
-    <button type="button" id="leftButton" aria-label="Влево">←</button>
-    <button type="button" id="upButton" aria-label="Вверх">↑</button>
-    <button type="button" id="downButton" aria-label="Вниз">↓</button>
-    <button type="button" id="rightButton" aria-label="Вправо">→</button>
+    <button id="leftButton" type="button" aria-label="Влево">←</button>
+    <button id="upButton" type="button" aria-label="Вверх">↑</button>
+    <button id="downButton" type="button" aria-label="Вниз">↓</button>
+    <button id="rightButton" type="button" aria-label="Вправо">→</button>
   </div>
 
-  <p class="subtitle" style="text-align:center">Управляй кораблём кнопками, клавиатурой или пальцем по экрану.</p>
+  <p class="subtitle" style="text-align:center">Управляй кораблём в четырёх направлениях, уклоняйся от препятствий и собирай кристаллы.</p>
 </section>
 
 <div class="footer">RIFT RUNNER · версия 4.1</div>
@@ -321,8 +302,8 @@ h2 {font-size:22px;margin:8px 0 16px}
     <div style="font-size:48px;margin:12px">🏆</div>
     <p>Очки: <b id="finalScore">0</b></p>
     <p>Кристаллы: <b id="finalCrystals">0</b></p>
-    <button type="button" class="primary" id="againButton">Играть снова</button>
-    <button type="button" class="secondary" id="resultHome" style="margin-top:10px">В меню</button>
+    <button class="primary" id="againButton" type="button">Играть снова</button>
+    <button class="secondary" id="resultHome" type="button" style="margin-top:10px">В меню</button>
   </div>
 </div>
 
@@ -330,8 +311,8 @@ h2 {font-size:22px;margin:8px 0 16px}
   <div class="modal-box">
     <h2>Пауза</h2>
     <p class="subtitle">Твой полёт приостановлен.</p>
-    <button type="button" class="primary" id="resumeButton">Продолжить</button>
-    <button type="button" class="secondary" id="quitButton" style="margin-top:10px">Выйти в меню</button>
+    <button class="primary" id="resumeButton" type="button">Продолжить</button>
+    <button class="secondary" id="quitButton" type="button" style="margin-top:10px">Выйти в меню</button>
   </div>
 </div>
 
@@ -339,25 +320,13 @@ h2 {font-size:22px;margin:8px 0 16px}
 (() => {
 "use strict";
 
-/* БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP */
-function initTelegram() {
-  try {
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-      if (typeof tg.setHeaderColor === "function") {
-        tg.setHeaderColor("#080b1b");
-      }
-    }
-  } catch (e) {
-    console.warn("Telegram WebApp init:", e);
-  }
+const tg = window.Telegram?.WebApp;
+if (tg) {
+  try { tg.ready(); } catch (e) {}
+  try { tg.expand(); } catch (e) {}
+  try { tg.setHeaderColor("#080b1b"); } catch (e) {}
 }
-initTelegram();
-window.addEventListener("load", initTelegram);
 
-/* ИГРОВЫЕ ДАННЫЕ */
 const SHIPS = [
   {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
   {id:1,name:"Фантом",emoji:"🛸",price:100,desc:"Лёгкий и быстрый"},
@@ -460,7 +429,6 @@ function saveData() {
 
 loadSave();
 
-/* ЭЛЕМЕНТЫ */
 const $ = id => document.getElementById(id);
 
 const screens = [
@@ -475,8 +443,10 @@ function showScreen(name) {
   });
   const target = $(name);
   if (target) target.classList.remove("hidden");
-  $("resultModal").classList.add("hidden");
-  $("pauseModal").classList.add("hidden");
+  const resultModal = $("resultModal");
+  const pauseModal = $("pauseModal");
+  if (resultModal) resultModal.classList.add("hidden");
+  if (pauseModal) pauseModal.classList.add("hidden");
   updateUI();
 }
 
@@ -486,7 +456,7 @@ function toast(message) {
   el.textContent = message;
   el.style.display = "block";
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.style.display = "none", 2600);
+  toast.timer = setTimeout(() => { el.style.display = "none"; }, 2600);
 }
 
 function unlockedWorldCount() {
@@ -494,21 +464,21 @@ function unlockedWorldCount() {
 }
 
 function updateUI() {
-  $("crystals").textContent = save.crystals;
-  $("shopCrystals").textContent = save.crystals;
-  $("bestScore").textContent = save.best;
-  $("statsBest").textContent = save.best;
-  $("statsEarned").textContent = save.totalEarned;
-  $("statsWorlds").textContent = unlockedWorldCount();
-  $("statsShips").textContent = save.ownedShips.length;
-  $("menuShip").textContent = SHIPS[save.selectedShip]?.emoji || "🚀";
+  if ($("crystals")) $("crystals").textContent = save.crystals;
+  if ($("shopCrystals")) $("shopCrystals").textContent = save.crystals;
+  if ($("bestScore")) $("bestScore").textContent = save.best;
+  if ($("statsBest")) $("statsBest").textContent = save.best;
+  if ($("statsEarned")) $("statsEarned").textContent = save.totalEarned;
+  if ($("statsWorlds")) $("statsWorlds").textContent = unlockedWorldCount();
+  if ($("statsShips")) $("statsShips").textContent = save.ownedShips.length;
+  if ($("menuShip")) $("menuShip").textContent = SHIPS[save.selectedShip]?.emoji || "🚀";
   if ($("shardsCount")) $("shardsCount").textContent = save.shards;
   if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
 }
 
-/* КОРАБЛИ */
 function renderShips() {
   const list = $("shipsList");
+  if (!list) return;
   list.innerHTML = "";
 
   SHIPS.forEach(ship => {
@@ -523,7 +493,7 @@ function renderShips() {
       <div class="name">${ship.name}</div>
       <div class="desc">${ship.desc}</div>
       <div class="pill">${owned ? (selected ? "Выбран" : "Куплен") : "💎 " + ship.price}</div>
-      <button type="button" class="secondary" style="width:100%">
+      <button class="secondary" type="button" style="width:100%">
         ${owned ? (selected ? "Выбран" : "Выбрать") : "Купить"}
       </button>
     `;
@@ -551,14 +521,14 @@ function renderShips() {
       updateUI();
       toast("Новый корабль куплен!");
     });
-    ```html
+
     list.appendChild(card);
   });
 }
 
-/* МИРЫ */
 function renderWorlds() {
   const list = $("worldsList");
+  if (!list) return;
   list.innerHTML = "";
 
   WORLDS.forEach(world => {
@@ -573,7 +543,7 @@ function renderWorlds() {
       <div class="name">${world.name}</div>
       <div class="desc">${unlocked ? "Мир доступен" : "Нужно очков: " + world.need}</div>
       <div class="pill">${unlocked ? (selected ? "Выбран" : "Открыт") : "🔒 Закрыт"}</div>
-      <button type="button" class="secondary" style="width:100%" ${unlocked ? "" : "disabled"}>
+      <button class="secondary" type="button" style="width:100%" ${unlocked ? "" : "disabled"}>
         ${selected ? "Выбран" : unlocked ? "Выбрать" : "Закрыт"}
       </button>
     `;
@@ -590,7 +560,6 @@ function renderWorlds() {
   });
 }
 
-/* КЕЙСЫ И КОЛЛЕКЦИЯ */
 function rarityBadge(item) {
   const r = RARITIES[item.rarity] || RARITIES.common;
   return `<span class="rarity ${r.className}">${r.name}</span>`;
@@ -598,6 +567,7 @@ function rarityBadge(item) {
 
 function renderCases() {
   const list = $("casesList");
+  if (!list) return;
   list.innerHTML = "";
   CASES.forEach(box => {
     const card = document.createElement("div");
@@ -607,7 +577,7 @@ function renderCases() {
     card.innerHTML = `<div class="case-art">${box.emoji}</div>
       <b>${box.name}</b><p class="subtitle">Шансы: ${chances}</p>
       <div class="pill">💎 ${box.price}</div>
-      <button type="button" class="primary" style="margin-top:10px">Открыть</button>`;
+      <button class="primary" type="button" style="margin-top:10px">Открыть</button>`;
     card.querySelector("button").addEventListener("click", () => openCase(box));
     list.appendChild(card);
   });
@@ -625,10 +595,7 @@ function pickCaseItem(box) {
 }
 
 function openCase(box) {
-  if (save.crystals < box.price) {
-    toast("Недостаточно кристаллов для кейса");
-    return;
-  }
+  if (save.crystals < box.price) { toast("Недостаточно кристаллов для кейса"); return; }
   save.crystals -= box.price;
   const item = pickCaseItem(box);
   let message = "";
@@ -646,17 +613,21 @@ function openCase(box) {
   saveData();
   updateUI();
   const result = $("caseResult");
-  result.classList.remove("hidden");
-  result.innerHTML = `<div style="font-size:48px">${item.emoji}</div>
-    <h2>${item.name}</h2>${rarityBadge(item)}
-    <p class="subtitle">${item.desc}</p><b>${message}</b>
-    <button type="button" class="secondary" style="margin-top:12px" id="caseResultClose">Понятно</button>`;
-  $("caseResultClose").addEventListener("click", () => result.classList.add("hidden"));
+  if (result) {
+    result.classList.remove("hidden");
+    result.innerHTML = `<div style="font-size:48px">${item.emoji}</div>
+      <h2>${item.name}</h2>${rarityBadge(item)}
+      <p class="subtitle">${item.desc}</p><b>${message}</b>
+      <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Понятно</button>`;
+    const closeBtn = $("caseResultClose");
+    if (closeBtn) closeBtn.addEventListener("click", () => result.classList.add("hidden"));
+  }
   toast("🎉 Кейс открыт!");
 }
 
 function renderInventory() {
   const list = $("inventoryList");
+  if (!list) return;
   list.innerHTML = "";
   const items = ITEMS.filter(item => save.ownedItems.includes(item.id));
   if (!items.length) {
@@ -669,7 +640,7 @@ function renderInventory() {
     card.className = "item";
     card.innerHTML = `<div class="emoji">${item.emoji}</div><div class="name">${item.name}</div>
       ${rarityBadge(item)}<div class="desc">${item.desc}</div>
-      <button type="button" class="secondary" style="width:100%" ${item.type === "upgrade" ? "disabled" : ""}>
+      <button class="secondary" type="button" style="width:100%" ${item.type === "upgrade" ? "disabled" : ""}>
       ${item.type === "upgrade" ? "Улучшение" : equipped ? "Используется" : "Экипировать"}</button>`;
     if (item.type !== "upgrade") {
       card.querySelector("button").addEventListener("click", () => {
@@ -680,19 +651,21 @@ function renderInventory() {
     }
     list.appendChild(card);
   });
-  $("shardsCount").textContent = save.shards;
-  $("collectorLevel").textContent = save.collectorLevel;
+  if ($("shardsCount")) $("shardsCount").textContent = save.shards;
+  if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
 }
 
-$("upgradeCollectorButton").addEventListener("click", () => {
-  if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
-  if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
-  save.shards -= 30;
-  save.collectorLevel++;
-  saveData(); renderInventory(); updateUI(); toast("Сборщик улучшен!");
-});
+const upgradeBtn = $("upgradeCollectorButton");
+if (upgradeBtn) {
+  upgradeBtn.addEventListener("click", () => {
+    if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
+    if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
+    save.shards -= 30;
+    save.collectorLevel++;
+    saveData(); renderInventory(); updateUI(); toast("Сборщик улучшен!");
+  });
+}
 
-/* ADSGRAM REWARD */
 const ADSGRAM_BLOCK_ID = "60401";
 let adController = null;
 let adBusy = false;
@@ -704,21 +677,12 @@ function loadAdsgram() {
   if (!sdkPromise) {
     sdkPromise = new Promise((resolve, reject) => {
       const existing = document.querySelector('script[data-adsgram="1"]');
-
       if (existing) {
-        if (window.Adsgram) {
-          resolve(window.Adsgram);
-          return;
-        }
-        existing.addEventListener("load", () => window.Adsgram ? resolve(window.Adsgram) : reject(new Error("SDK не найден")), {once:true});
-        existing.addEventListener("error", () => reject(new Error("Не удалось загрузить SDK")), {once:true});
-        setTimeout(() => {
-          if (window.Adsgram) resolve(window.Adsgram);
-          else reject(new Error("Таймаут загрузки SDK"));
-        }, 5000);
+        existing.addEventListener("load", () => resolve(window.Adsgram), {once:true});
+        existing.addEventListener("error", reject, {once:true});
+        if (window.Adsgram) resolve(window.Adsgram);
         return;
       }
-
       const script = document.createElement("script");
       script.src = "https://sad.adsgram.ai/js/sad.min.js";
       script.async = true;
@@ -728,54 +692,51 @@ function loadAdsgram() {
       document.head.appendChild(script);
     });
   }
-
   return sdkPromise;
 }
 
 async function watchAd() {
   if (adBusy) return;
-
   adBusy = true;
   const buttons = [$("watchAdButton"), $("watchAdMenuButton")].filter(Boolean);
   const statuses = [$("adStatus"), $("adMenuStatus")].filter(Boolean);
   buttons.forEach(button => { button.disabled = true; button.textContent = "⏳ Загрузка рекламы..."; });
-  statuses.forEach(status => status.textContent = "Подготавливаем рекламный блок...");
+  statuses.forEach(status => { status.textContent = "Подготавливаем рекламный блок..."; });
 
   try {
     const Adsgram = await loadAdsgram();
     if (!Adsgram || typeof Adsgram.init !== "function") throw new Error("AdsGram SDK недоступен");
     if (!adController) adController = Adsgram.init({blockId:ADSGRAM_BLOCK_ID});
 
-    buttons.forEach(button => button.textContent = "⏳ Идёт показ рекламы...");
-    statuses.forEach(status => status.textContent = "Дождись завершения рекламы для получения награды.");
+    buttons.forEach(button => { button.textContent = "⏳ Идёт показ рекламы..."; });
+    statuses.forEach(status => { status.textContent = "Дождись завершения рекламы для получения награды."; });
 
     const result = await adController.show();
     if (result && result.done === true && result.error !== true) {
       save.crystals += 25;
       save.totalEarned += 25;
       saveData(); updateUI();
-      statuses.forEach(status => status.textContent = "Награда получена!");
+      statuses.forEach(status => { status.textContent = "Награда получена!"; });
       toast("🎉 +25 кристаллов!");
     } else {
-      statuses.forEach(status => status.textContent = "Просмотр не завершён. Награды нет.");
+      statuses.forEach(status => { status.textContent = "Просмотр не завершён. Награды нет."; });
       toast("Просмотр не завершён — награды нет");
     }
   } catch (error) {
     console.warn("AdsGram:", error);
-    sdkPromise = null;
-    statuses.forEach(status => status.textContent = "Реклама сейчас недоступна. Попробуй позже.");
+    statuses.forEach(status => { status.textContent = "Реклама сейчас недоступна. Попробуй позже."; });
     toast("Не удалось показать рекламу");
   } finally {
     adBusy = false;
     buttons.forEach(button => { button.disabled = false; button.textContent = "▶ Смотреть рекламу · +25 💎"; });
   }
 }
-$("watchAdButton").addEventListener("click", watchAd);
-$("watchAdMenuButton").addEventListener("click", watchAd);
 
-/* ИГРА */
+if ($("watchAdButton")) $("watchAdButton").addEventListener("click", watchAd);
+if ($("watchAdMenuButton")) $("watchAdMenuButton").addEventListener("click", watchAd);
+
 const canvas = $("gameCanvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas ? canvas.getContext("2d") : null;
 
 let game = {
   running:false,
@@ -795,12 +756,17 @@ let game = {
 let canvasWidth = 0;
 let canvasHeight = 0;
 
+function resetKeys() {
+  game.keys = {left:false, right:false, up:false, down:false};
+}
+
 function resizeCanvas() {
+  if (!canvas || !ctx) return;
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-  canvasWidth = rect.width || 360;
-  canvasHeight = rect.height || 480;
+  canvasWidth = Math.max(200, rect.width || 360);
+  canvasHeight = Math.max(240, rect.height || 420);
 
   canvas.width = Math.floor(canvasWidth * dpr);
   canvas.height = Math.floor(canvasHeight * dpr);
@@ -819,20 +785,12 @@ function resizeCanvas() {
 }
 
 window.addEventListener("resize", () => {
-  if (!$("gameScreen").classList.contains("hidden")) resizeCanvas();
+  if ($("gameScreen") && !$("gameScreen").classList.contains("hidden")) resizeCanvas();
 });
 
-function resetKeys() {
-  game.keys = {left:false, right:false, up:false, down:false};
-  ["leftButton", "rightButton", "upButton", "downButton"].forEach(id => {
-    const btn = $(id);
-    if (btn) btn.classList.remove("pressed");
-  });
-}
-
 function startGame() {
-  $("resultModal").classList.add("hidden");
-  $("pauseModal").classList.add("hidden");
+  if ($("resultModal")) $("resultModal").classList.add("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   showScreen("gameScreen");
   resizeCanvas();
 
@@ -847,8 +805,8 @@ function startGame() {
   game.lastTime = performance.now();
   resetKeys();
 
-  $("score").textContent = "0";
-  $("runCrystals").textContent = "0";
+  if ($("score")) $("score").textContent = "0";
+  if ($("runCrystals")) $("runCrystals").textContent = "0";
 
   cancelAnimationFrame(game.animation);
   game.animation = requestAnimationFrame(loop);
@@ -856,10 +814,9 @@ function startGame() {
 
 function endGame() {
   if (!game.running) return;
-
   game.running = false;
-  resetKeys();
   cancelAnimationFrame(game.animation);
+  resetKeys();
 
   const score = Math.floor(game.score);
   const earned = game.crystals;
@@ -870,75 +827,63 @@ function endGame() {
   saveData();
   updateUI();
 
-  $("finalScore").textContent = score;
-  $("finalCrystals").textContent = earned;
-  $("resultTitle").textContent = "Полёт завершён";
-  $("resultModal").classList.remove("hidden");
+  if ($("finalScore")) $("finalScore").textContent = score;
+  if ($("finalCrystals")) $("finalCrystals").textContent = earned;
+  if ($("resultTitle")) $("resultTitle").textContent = "Полёт завершён";
+  if ($("resultModal")) $("resultModal").classList.remove("hidden");
 }
 
 function pauseGame() {
   if (!game.running || game.paused) return;
   game.paused = true;
   resetKeys();
-  $("pauseModal").classList.remove("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.remove("hidden");
 }
 
 function resumeGame() {
   if (!game.running) return;
   game.paused = false;
   game.lastTime = performance.now();
-  $("pauseModal").classList.add("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   game.animation = requestAnimationFrame(loop);
 }
 
-/* УПРАВЛЕНИЕ КНОПКАМИ ПОЛЁТА */
 const controlButtons = [
-  ["leftButton", "left"],
-  ["rightButton", "right"],
-  ["upButton", "up"],
-  ["downButton", "down"]
+  ["leftButton","left"],
+  ["rightButton","right"],
+  ["upButton","up"],
+  ["downButton","down"]
 ];
 
 controlButtons.forEach(([id, direction]) => {
   const button = $(id);
-
+  if (!button) return;
   const press = e => {
-    if (e.cancelable) e.preventDefault();
-    game.keys[direction] = true;
-    button.classList.add("pressed");
-  };
-
-  const release = e => {
     if (e && e.cancelable) e.preventDefault();
+    game.keys[direction] = true;
+    if (typeof button.setPointerCapture === "function" && e && e.pointerId !== undefined) {
+      try { button.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+  };
+  const release = () => {
     game.keys[direction] = false;
-    button.classList.remove("pressed");
   };
 
-  button.addEventListener("contextmenu", e => e.preventDefault());
-
-  button.addEventListener("pointerdown", e => {
-    try { button.setPointerCapture(e.pointerId); } catch (_) {}
-    press(e);
-  });
+  button.addEventListener("pointerdown", press);
   button.addEventListener("pointerup", release);
   button.addEventListener("pointercancel", release);
   button.addEventListener("lostpointercapture", release);
-
   button.addEventListener("touchstart", press, {passive:false});
-  button.addEventListener("touchend", release, {passive:false});
-  button.addEventListener("touchcancel", release, {passive:false});
-
+  button.addEventListener("touchend", release);
+  button.addEventListener("touchcancel", release);
   button.addEventListener("mousedown", press);
   button.addEventListener("mouseup", release);
   button.addEventListener("mouseleave", release);
+  button.addEventListener("contextmenu", e => e.preventDefault());
 });
 
-/* КЛАВИАТУРА */
-const keyMap = {
-  ArrowLeft:"left",
-  ArrowRight:"right",
-  ArrowUp:"up",
-  ArrowDown:"down",
+const KEY_MAP = {
+  ArrowLeft:"left", ArrowRight:"right", ArrowUp:"up", ArrowDown:"down",
   a:"left", A:"left", ф:"left", Ф:"left",
   d:"right", D:"right", в:"right", В:"right",
   w:"up", W:"up", ц:"up", Ц:"up",
@@ -946,8 +891,8 @@ const keyMap = {
 };
 
 window.addEventListener("keydown", e => {
-  if ($("gameScreen").classList.contains("hidden")) return;
-  const direction = keyMap[e.key];
+  if (!$("gameScreen") || $("gameScreen").classList.contains("hidden")) return;
+  const direction = KEY_MAP[e.key];
   if (direction) {
     e.preventDefault();
     game.keys[direction] = true;
@@ -955,62 +900,54 @@ window.addEventListener("keydown", e => {
 });
 
 window.addEventListener("keyup", e => {
-  const direction = keyMap[e.key];
+  const direction = KEY_MAP[e.key];
   if (direction) game.keys[direction] = false;
 });
 
 window.addEventListener("blur", resetKeys);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) resetKeys();
+});
 
-/* УПРАВЛЕНИЕ КАСАНИЕМ ПО ЭКРАНУ ИГРЫ */
 let canvasPointerActive = false;
 
-function moveToCoords(clientX, clientY) {
+function moveToPointer(e) {
+  if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
-
-  game.playerX = Math.max(0.08, Math.min(0.92,
-    (clientX - rect.left) / rect.width
-  ));
-
-  game.playerY = Math.max(0.12, Math.min(0.85,
-    (clientY - rect.top) / rect.height
-  ));
+  game.playerX = Math.max(0.08, Math.min(0.92, (e.clientX - rect.left) / rect.width));
+  game.playerY = Math.max(0.12, Math.min(0.85, (e.clientY - rect.top) / rect.height));
 }
 
-canvas.addEventListener("pointerdown", e => {
-  if (!game.running || game.paused) return;
-  canvasPointerActive = true;
-  moveToCoords(e.clientX, e.clientY);
-});
-
-canvas.addEventListener("pointermove", e => {
-  if (canvasPointerActive && game.running && !game.paused) {
-    moveToCoords(e.clientX, e.clientY);
-  }
-});
-
-["pointerup", "pointercancel", "lostpointercapture"].forEach(event => {
-  canvas.addEventListener(event, () => {
-    canvasPointerActive = false;
+if (canvas) {
+  canvas.addEventListener("pointerdown", e => {
+    if (!game.running || game.paused) return;
+    canvasPointerActive = true;
+    moveToPointer(e);
   });
-});
 
-/* СОЗДАНИЕ ОБЪЕКТОВ */
+  canvas.addEventListener("pointermove", e => {
+    if (canvasPointerActive && game.running && !game.paused) moveToPointer(e);
+  });
+
+  ["pointerup","pointercancel","lostpointercapture"].forEach(event => {
+    canvas.addEventListener(event, () => { canvasPointerActive = false; });
+  });
+}
+
 function spawnObject() {
   const isCrystal = Math.random() < 0.32;
-
   game.objects.push({
     type:isCrystal ? "crystal" : "rock",
-    x:Math.random() * (canvasWidth - 50) + 25,
+    x:Math.random() * Math.max(40, canvasWidth - 50) + 25,
     y:-30,
     size:isCrystal ? 12 : 18,
     speed:150 + Math.random() * 65 + game.score * 0.25
   });
 }
 
-/* ДВИЖЕНИЕ И СТОЛКНОВЕНИЯ */
 function updateGame(dt) {
-  const moveSpeed = 0.72;
+  const moveSpeed = 0.65;
 
   if (game.keys.left) game.playerX -= moveSpeed * dt;
   if (game.keys.right) game.playerX += moveSpeed * dt;
@@ -1024,7 +961,6 @@ function updateGame(dt) {
   game.spawn += dt;
 
   const spawnDelay = Math.max(0.38, 0.9 - game.score / 1800);
-
   if (game.spawn >= spawnDelay) {
     game.spawn = 0;
     spawnObject();
@@ -1045,7 +981,7 @@ function updateGame(dt) {
       game.crystals++;
       if (save.collectorLevel > 0 && Math.random() < save.collectorLevel * 0.12) game.crystals++;
       game.objects.splice(i, 1);
-      $("runCrystals").textContent = game.crystals;
+      if ($("runCrystals")) $("runCrystals").textContent = game.crystals;
       continue;
     }
 
@@ -1061,76 +997,46 @@ function updateGame(dt) {
 
   game.stars.forEach(star => {
     star.y += star.speed * dt;
-
     if (star.y > canvasHeight) {
       star.y = 0;
       star.x = Math.random() * canvasWidth;
     }
   });
 
-  $("score").textContent = Math.floor(game.score);
+  if ($("score")) $("score").textContent = Math.floor(game.score);
 }
 
-/* РИСОВАНИЕ КОРАБЛЯ */
 function drawPlayer() {
+  if (!ctx) return;
   const x = game.playerX * canvasWidth;
   const y = game.playerY * canvasHeight;
   const ship = save.selectedShip;
 
-  const colors = [
-    "#48eaff",
-    "#b58aff",
-    "#ffb84d",
-    "#ff5ca8",
-    "#8cffb0"
-  ];
-
+  const colors = ["#48eaff", "#b58aff", "#ffb84d", "#ff5ca8", "#8cffb0"];
   const equipped = ITEMS.find(item => item.id === save.equippedSkin);
   const trail = ITEMS.find(item => item.id === save.equippedTrail);
   const color = equipped?.color || colors[ship] || colors[0];
 
   ctx.save();
   ctx.translate(x, y);
-
   ctx.shadowColor = color;
   ctx.shadowBlur = 18;
-
   ctx.fillStyle = color;
   ctx.strokeStyle = "#ffffff";
   ctx.lineWidth = 2;
 
   ctx.beginPath();
-
   if (ship === 1) {
-    ctx.moveTo(0, -20);
-    ctx.lineTo(22, 0);
-    ctx.lineTo(12, 12);
-    ctx.lineTo(-12, 12);
-    ctx.lineTo(-22, 0);
+    ctx.moveTo(0, -20); ctx.lineTo(22, 0); ctx.lineTo(12, 12); ctx.lineTo(-12, 12); ctx.lineTo(-22, 0);
   } else if (ship === 2) {
-    ctx.moveTo(0, -22);
-    ctx.lineTo(14, 8);
-    ctx.lineTo(0, 17);
-    ctx.lineTo(-14, 8);
+    ctx.moveTo(0, -22); ctx.lineTo(14, 8); ctx.lineTo(0, 17); ctx.lineTo(-14, 8);
   } else if (ship === 3) {
-    ctx.moveTo(0, -22);
-    ctx.lineTo(18, 13);
-    ctx.lineTo(0, 7);
-    ctx.lineTo(-18, 13);
+    ctx.moveTo(0, -22); ctx.lineTo(18, 13); ctx.lineTo(0, 7); ctx.lineTo(-18, 13);
   } else if (ship === 4) {
-    ctx.moveTo(0, -24);
-    ctx.lineTo(19, -2);
-    ctx.lineTo(13, 15);
-    ctx.lineTo(0, 9);
-    ctx.lineTo(-13, 15);
-    ctx.lineTo(-19, -2);
+    ctx.moveTo(0, -24); ctx.lineTo(19, -2); ctx.lineTo(13, 15); ctx.lineTo(0, 9); ctx.lineTo(-13, 15); ctx.lineTo(-19, -2);
   } else {
-    ctx.moveTo(0, -22);
-    ctx.lineTo(17, 15);
-    ctx.lineTo(0, 8);
-    ctx.lineTo(-17, 15);
+    ctx.moveTo(0, -22); ctx.lineTo(17, 15); ctx.lineTo(0, 8); ctx.lineTo(-17, 15);
   }
-
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
@@ -1152,40 +1058,34 @@ function drawPlayer() {
   ctx.restore();
 }
 
-/* РИСОВАНИЕ ОБЪЕКТОВ */
 function drawObjects() {
+  if (!ctx) return;
   game.objects.forEach(obj => {
     ctx.save();
-
     if (obj.type === "crystal") {
       ctx.shadowColor = "#48eaff";
       ctx.shadowBlur = 15;
       ctx.fillStyle = "#48eaff";
-
       ctx.translate(obj.x, obj.y);
       ctx.rotate(Math.PI / 4);
-
       ctx.fillRect(-8, -8, 16, 16);
     } else {
       ctx.shadowColor = "#ff5c83";
       ctx.shadowBlur = 10;
       ctx.fillStyle = "#ff5c83";
-
       ctx.beginPath();
       ctx.arc(obj.x, obj.y, obj.size, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.strokeStyle = "#ffc0d1";
       ctx.lineWidth = 2;
       ctx.stroke();
     }
-
     ctx.restore();
   });
 }
 
-/* ОТРИСОВКА ИГРЫ */
 function drawGame() {
+  if (!ctx) return;
   const world = WORLDS[save.selectedWorld] || WORLDS[0];
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -1201,12 +1101,10 @@ function drawGame() {
   });
 
   ctx.globalAlpha = 1;
-
   drawObjects();
   drawPlayer();
 }
 
-/* ИГРОВОЙ ЦИКЛ */
 function loop(timestamp) {
   if (!game.running || game.paused) return;
 
@@ -1214,31 +1112,21 @@ function loop(timestamp) {
   game.lastTime = timestamp;
 
   updateGame(dt);
-
   if (!game.running) return;
 
   drawGame();
-
   game.animation = requestAnimationFrame(loop);
 }
 
-/* ПЕРЕХОД В МЕНЮ */
 function goHome() {
   game.running = false;
   game.paused = false;
-  resetKeys();
-
   cancelAnimationFrame(game.animation);
+  resetKeys();
   showScreen("menuScreen");
 }
 
-/* КНОПКИ МЕНЮ */
-document.addEventListener("click", e => {
-  const button = e.target.closest("[data-action]");
-  if (!button) return;
-
-  const action = button.dataset.action;
-
+function handleAction(action) {
   if (action === "play") startGame();
   if (action === "ships") { renderShips(); showScreen("shipsScreen"); }
   if (action === "worlds") { renderWorlds(); showScreen("worldsScreen"); }
@@ -1246,24 +1134,32 @@ document.addEventListener("click", e => {
   if (action === "stats") showScreen("statsScreen");
   if (action === "cases") {
     renderCases();
-    $("caseResult").classList.add("hidden");
+    if ($("caseResult")) $("caseResult").classList.add("hidden");
     showScreen("casesScreen");
   }
-  if (action === "inventory") {
-    renderInventory();
-    showScreen("inventoryScreen");
-  }
+  if (action === "inventory") { renderInventory(); showScreen("inventoryScreen"); }
   if (action === "home") goHome();
   if (action === "pause") pauseGame();
+}
+
+document.addEventListener("click", e => {
+  const button = e.target.closest("[data-action]");
+  if (!button) return;
+  handleAction(button.dataset.action);
 });
 
-/* КНОПКИ РЕЗУЛЬТАТОВ И ПАУЗЫ */
-$("againButton").addEventListener("click", startGame);
-$("resultHome").addEventListener("click", goHome);
-$("resumeB
-$("resumeButton").addEventListener("click", resumeGame);
-$("quitButton").addEventListener("click", goHome);
-/* ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА */
+document.querySelectorAll("[data-action]").forEach(button => {
+  button.addEventListener("touchend", e => {
+    if (e && e.cancelable) e.preventDefault();
+    handleAction(button.dataset.action);
+  }, {passive:false});
+});
+
+if ($("againButton")) $("againButton").addEventListener("click", startGame);
+if ($("resultHome")) $("resultHome").addEventListener("click", goHome);
+if ($("resumeButton")) $("resumeButton").addEventListener("click", resumeGame);
+if ($("quitButton")) $("quitButton").addEventListener("click", goHome);
+
 updateUI();
 renderShips();
 renderWorlds();
@@ -1273,4 +1169,3 @@ renderInventory();
 </script>
 </body>
 </html>
- 
