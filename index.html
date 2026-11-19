@@ -1,4 +1,4 @@
-м<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
@@ -42,10 +42,21 @@ button:disabled {opacity:.5;cursor:default}
 #app {max-width:520px;margin:auto;padding:16px;min-height:100vh}
 .topbar {
   display:flex;justify-content:space-between;align-items:center;
-  margin:4px 0 22px;
+  margin:4px 0 22px;gap:8px;
 }
 .logo {font-size:23px;font-weight:900;letter-spacing:2px}
 .logo span {color:var(--cyan)}
+.topbar-right {
+  display:flex;align-items:center;gap:8px;
+}
+.sound-btn {
+  background:#182344;border:1px solid #35466f;
+  border-radius:20px;padding:8px 12px;font-size:14px;
+  color:#dce8ff;
+}
+.sound-btn.muted {
+  opacity:.65;border-color:#533b56;color:#f5b8d0;
+}
 .balance {
   background:#182344;border:1px solid #35466f;
   border-radius:20px;padding:9px 13px;color:#ffe58b;font-weight:bold;
@@ -147,11 +158,11 @@ h2 {font-size:22px;margin:8px 0 16px}
   background:#172343;border:1px solid #536a9c;border-radius:20px;padding:24px;
 }
 .rarity {display:inline-block;border-radius:20px;padding:5px 9px;font-size:11px;font-weight:bold;margin:5px 0}
-.r-common {background:#39445b;color:#d9e0ef}
-.r-uncommon {background:#174d37;color:#8dffc1}
-.r-rare {background:#173d70;color:#91c8ff}
-.r-epic {background:#4c2875;color:#e1b4ff}
-.r-legendary {background:#705018;color:#ffe19a}
+.r-common {background:#39445b;color:#d9e0ef;border:1px solid #5d6c8c}
+.r-uncommon {background:#174d37;color:#8dffc1;border:1px solid #2b8a62}
+.r-rare {background:#173d70;color:#91c8ff;border:1px solid #2f6fc4}
+.r-epic {background:#4c2875;color:#e1b4ff;border:1px solid #8a4cd1}
+.r-legendary {background:#705018;color:#ffe19a;border:1px solid #d99b26}
 .case-card {background:linear-gradient(145deg,#1d3158,#121a35);border:1px solid #49618e;border-radius:17px;padding:14px;text-align:center}
 .case-art {font-size:48px;margin:8px}
 .reward-reveal {border:1px solid #6079ad;background:#1c2b50;border-radius:16px;padding:18px;margin:12px 0;text-align:center}
@@ -198,7 +209,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 }
 .roulette-slot {
   flex:0 0 92px;
-  height:106px;
+  height:112px;
   border-radius:13px;
   background:#152040;
   border:1px solid #354b7a;
@@ -209,14 +220,19 @@ h2 {font-size:22px;margin:8px 0 16px}
   padding:6px;
   text-align:center;
 }
+.roulette-slot.slot-common {border-color:#5d6c8c}
+.roulette-slot.slot-uncommon {border-color:#2b8a62;background:#122926}
+.roulette-slot.slot-rare {border-color:#2f6fc4;background:#122342}
+.roulette-slot.slot-epic {border-color:#8a4cd1;background:#24173d}
+.roulette-slot.slot-legendary {border-color:#d99b26;background:#362611}
 .roulette-slot.winner {
   border:2px solid #ffe58b;
   background:#223564;
-  box-shadow:0 0 16px #ffe58b55;
+  box-shadow:0 0 16px #ffe58b66;
 }
-.roulette-slot .slot-emoji {font-size:32px;line-height:1.1}
-.roulette-slot .slot-name {font-size:11px;font-weight:bold;margin-top:6px;color:#eef3ff;line-height:1.2}
-.roulette-slot .slot-sub {font-size:10px;color:var(--muted);margin-top:2px}
+.roulette-slot .slot-emoji {font-size:30px;line-height:1.1}
+.roulette-slot .slot-name {font-size:11px;font-weight:bold;margin-top:5px;color:#eef3ff;line-height:1.15}
+.roulette-slot .slot-sub {font-size:9px;font-weight:bold;margin-top:3px;opacity:.9}
 .bonus-box {
   background:#141e3b;
   border:1px solid #2d3e69;
@@ -228,6 +244,25 @@ h2 {font-size:22px;margin:8px 0 16px}
   line-height:1.45;
   color:#dce6ff;
 }
+.pool-group {
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid #283860;
+}
+.pool-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:6px;
+}
+.pool-chip {
+  background:#131d38;
+  border:1px solid #2e406c;
+  border-radius:10px;
+  padding:5px 8px;
+  font-size:12px;
+  color:#e4ecff;
+}
 
 .footer {text-align:center;color:#7180a7;font-size:11px;margin:25px 0 10px}
 </style>
@@ -238,7 +273,10 @@ h2 {font-size:22px;margin:8px 0 16px}
 
 <div class="topbar">
   <div class="logo">RIFT <span>RUNNER</span></div>
-  <div class="balance">💎 <span id="crystals">0</span></div>
+  <div class="topbar-right">
+    <button class="sound-btn" id="soundToggleButton" type="button" aria-label="Переключить звук">🔊 Звук</button>
+    <div class="balance">💎 <span id="crystals">0</span></div>
+  </div>
 </div>
 
 <!-- ГЛАВНОЕ МЕНЮ -->
@@ -310,7 +348,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 <section id="casesScreen" class="hidden">
   <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🎁 Космические кейсы</h2>
-  <p class="subtitle">Крути рулетку кейсов: внутри красивые корабли, раскраски, следы, осколки и полезные бонусы к полёту.</p>
+  <p class="subtitle">В рулетке кейсов <b id="totalPrizesCount">19</b> призов, разделённых на 5 редкостей: корабли, скины, следы, ресурсы и бонусы к полёту.</p>
 
   <div class="panel" id="roulettePanel">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -329,10 +367,11 @@ h2 {font-size:22px;margin:8px 0 16px}
   <div class="panel">
     <b>Активные бонусы из кейсов</b>
     <div class="bonus-box" id="activeBonusesBox"></div>
-    <div style="margin-top:12px">
-      <b>Редкости предметов</b>
-      <p style="margin:8px 0 0"><span class="rarity r-common">Обычный</span> <span class="rarity r-uncommon">Необычный</span> <span class="rarity r-rare">Редкий</span> <span class="rarity r-epic">Эпический</span> <span class="rarity r-legendary">Легендарный</span></p>
-    </div>
+  </div>
+
+  <div class="panel">
+    <b>Список всех призов по редкостям</b>
+    <div id="rarityPoolsBox"></div>
   </div>
 </section>
 
@@ -381,7 +420,7 @@ h2 {font-size:22px;margin:8px 0 16px}
   <p class="subtitle" style="text-align:center">Управляй кораблём в четырёх направлениях, уклоняйся от препятствий и собирай кристаллы.</p>
 </section>
 
-<div class="footer">RIFT RUNNER · версия 4.2</div>
+<div class="footer">RIFT RUNNER · версия 4.4</div>
 </div>
 
 <div id="toast"></div>
@@ -417,6 +456,197 @@ if (tg) {
   try { tg.setHeaderColor("#080b1b"); } catch (e) {}
 }
 
+/* ЗВУКОВОЙ ДВИЖОК + КОСМИЧЕСКИЙ ЭМБИЕНТ (Web Audio API — без внешних файлов) */
+const sfx = (() => {
+  let ctx = null;
+  let enabled = true;
+  let tickTimer = null;
+  let ambientTimer = null;
+  let ambientActive = false;
+  let ambientStep = 0;
+
+  function ensureCtx() {
+    if (!enabled) return null;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return null;
+    if (!ctx) {
+      ctx = new AudioCtx();
+    }
+    if (ctx.state === "suspended") {
+      ctx.resume().catch(() => {});
+    }
+    return ctx;
+  }
+
+  function playTone(freq, endFreq, duration, type = "sine", gainVal = 0.08, delay = 0) {
+    const ac = ensureCtx();
+    if (!ac) return;
+    const now = ac.currentTime + delay;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (endFreq !== null && endFreq !== freq) {
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+    }
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(gainVal, now + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + duration + 0.02);
+  }
+
+  function playAmbientPulse(worldId = 0) {
+    if (!enabled || !ambientActive) return;
+    const ac = ensureCtx();
+    if (!ac) return;
+
+    const scales = [
+      [110, 146.83, 164.81, 220],   // Синий сектор
+      [98, 130.81, 146.83, 196],     // Красная туманность
+      [123.47, 164.81, 185, 246.94], // Ледяная орбита
+      [110, 164.81, 196, 246.94],    // Звёздный шторм
+      [87.31, 130.81, 174.61, 220]   // Разлом
+    ];
+    const notes = scales[worldId] || scales[0];
+    const note = notes[ambientStep % notes.length];
+    ambientStep++;
+
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const filter = ac.createBiquadFilter();
+    const gain = ac.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(note, now);
+    osc.frequency.exponentialRampToValueAtTime(note * 1.015, now + 0.9);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(420, now);
+
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.022, now + 0.22);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+    osc.start(now);
+    osc.stop(now + 1.0);
+  }
+
+  function startAmbient(worldId = 0) {
+    stopAmbient();
+    if (!enabled) return;
+    ambientActive = true;
+    ambientStep = 0;
+    playAmbientPulse(worldId);
+    ambientTimer = setInterval(() => {
+      playAmbientPulse(save?.selectedWorld || worldId);
+    }, 950);
+  }
+
+  function stopAmbient() {
+    ambientActive = false;
+    if (ambientTimer) {
+      clearInterval(ambientTimer);
+      ambientTimer = null;
+    }
+  }
+
+  function setEnabled(val) {
+    enabled = Boolean(val);
+    if (!enabled) {
+      stopRouletteTicks();
+      stopAmbient();
+    } else if (game && game.running && !game.paused) {
+      startAmbient(save?.selectedWorld || 0);
+    }
+  }
+
+  function isEnabled() {
+    return enabled;
+  }
+
+  function click() {
+    playTone(520, 680, 0.055, "triangle", 0.05);
+  }
+
+  function crystal() {
+    playTone(740, 1180, 0.09, "sine", 0.09);
+    playTone(1180, 1520, 0.11, "triangle", 0.06, 0.045);
+  }
+
+  function shieldBlock() {
+    playTone(320, 620, 0.14, "sawtooth", 0.07);
+    playTone(620, 280, 0.16, "sine", 0.07, 0.07);
+  }
+
+  function gameOver() {
+    stopAmbient();
+    playTone(260, 75, 0.36, "sawtooth", 0.11);
+    playTone(170, 52, 0.42, "triangle", 0.09, 0.08);
+  }
+
+  function startRouletteTicks(durationMs = 2600) {
+    stopRouletteTicks();
+    if (!enabled) return;
+    const start = performance.now();
+    let step = 0;
+
+    const scheduleNext = () => {
+      if (!enabled) return;
+      const elapsed = performance.now() - start;
+      if (elapsed >= durationMs) return;
+      const progress = elapsed / durationMs;
+      const interval = 55 + Math.pow(progress, 2.2) * 240;
+      const pitch = 420 + (step % 4) * 55 - progress * 90;
+      playTone(Math.max(180, pitch), null, 0.035, "square", 0.025);
+      step++;
+      tickTimer = setTimeout(scheduleNext, interval);
+    };
+
+    scheduleNext();
+  }
+
+  function stopRouletteTicks() {
+    if (tickTimer) {
+      clearTimeout(tickTimer);
+      tickTimer = null;
+    }
+  }
+
+  function winPrize(rarity = "common") {
+    stopRouletteTicks();
+    if (rarity === "legendary" || rarity === "epic") {
+      playTone(523.25, null, 0.12, "triangle", 0.09, 0);
+      playTone(659.25, null, 0.12, "triangle", 0.09, 0.1);
+      playTone(783.99, null, 0.14, "triangle", 0.1, 0.2);
+      playTone(1046.5, null, 0.28, "sine", 0.11, 0.32);
+    } else {
+      playTone(587.33, null, 0.11, "triangle", 0.08, 0);
+      playTone(880, null, 0.2, "sine", 0.09, 0.1);
+    }
+  }
+
+  return {
+    ensureCtx,
+    setEnabled,
+    isEnabled,
+    startAmbient,
+    stopAmbient,
+    click,
+    crystal,
+    shieldBlock,
+    gameOver,
+    startRouletteTicks,
+    stopRouletteTicks,
+    winPrize
+  };
+})();
+
 /* КОРАБЛИ (включая эксклюзивные корабли из кейсов: id 5, 6, 7) */
 const SHIPS = [
   {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
@@ -437,12 +667,14 @@ const WORLDS = [
   {id:4,name:"Разлом",emoji:"🌀",need:900,color:"#251345"}
 ];
 
+const RARITY_ORDER = ["common", "uncommon", "rare", "epic", "legendary"];
+
 const RARITIES = {
-  common:{name:"Обычный",className:"r-common",shards:5},
-  uncommon:{name:"Необычный",className:"r-uncommon",shards:10},
-  rare:{name:"Редкий",className:"r-rare",shards:20},
-  epic:{name:"Эпический",className:"r-epic",shards:35},
-  legendary:{name:"Легендарный",className:"r-legendary",shards:60}
+  common:{name:"Обычный",className:"r-common",slotClass:"slot-common",color:"#c4d0ea",shards:5},
+  uncommon:{name:"Необычный",className:"r-uncommon",slotClass:"slot-uncommon",color:"#8dffc1",shards:10},
+  rare:{name:"Редкий",className:"r-rare",slotClass:"slot-rare",color:"#91c8ff",shards:20},
+  epic:{name:"Эпический",className:"r-epic",slotClass:"slot-epic",color:"#e1b4ff",shards:35},
+  legendary:{name:"Легендарный",className:"r-legendary",slotClass:"slot-legendary",color:"#ffe19a",shards:60}
 };
 
 const ITEMS = [
@@ -459,30 +691,36 @@ const ITEMS = [
   {id:"upgrade_collector",name:"Сборщик кристаллов",emoji:"💎",type:"upgrade",rarity:"rare",desc:"Повышает шанс дополнительного кристалла"}
 ];
 
-/* СПЕЦИАЛЬНЫЕ НАГРАДЫ И БОНУСЫ ИЗ КЕЙСОВ */
+/* 19 ПРИЗОВ, РАЗДЕЛЁННЫХ НА 5 РЕДКОСТЕЙ */
 const CASE_PRIZES = [
-  // Красивые эксклюзивные корабли
-  {id:"ship_valkyrie",name:"Корабль Валькирия",emoji:"🛰️",kind:"ship",shipId:5,rarity:"rare",desc:"Красивый корабль-разведчик добавлен в ангар!"},
-  {id:"ship_aurora",name:"Корабль Аврора",emoji:"✨",kind:"ship",shipId:6,rarity:"epic",desc:"Сверкающий звёздный крейсер добавлен в ангар!"},
-  {id:"ship_chronos",name:"Корабль Хронос",emoji:"🪐",kind:"ship",shipId:7,rarity:"legendary",desc:"Легендарный корабль повелителя разломов!"},
+  // Обычный (common) — 4 приза
+  {id:"item_skin_ice",name:"Ледяной корпус",emoji:"❄️",kind:"item",itemRef:ITEMS[0],rarity:"common",desc:"Холодное сияние корпуса"},
+  {id:"item_skin_lime",name:"Кислотный неон",emoji:"🟢",kind:"item",itemRef:ITEMS[1],rarity:"common",desc:"Яркий зелёный корпус"},
+  {id:"crystals_40",name:"Горсть кристаллов (+40 💎)",emoji:"💠",kind:"crystals",amount:40,rarity:"common",desc:"Начисляет +40 кристаллов на баланс"},
+  {id:"shards_10",name:"Малый осколок (+10 ✨)",emoji:"🔹",kind:"shards",amount:10,rarity:"common",desc:"Добавляет +10 осколков в коллекцию"},
 
-  // Бонусы к игровому процессу и балансу
+  // Необычный (uncommon) — 4 приза
+  {id:"item_trail_blue",name:"Синий след",emoji:"💠",kind:"item",itemRef:ITEMS[2],rarity:"uncommon",desc:"Голубой след двигателя"},
+  {id:"item_skin_purple",name:"Плазма",emoji:"🟣",kind:"item",itemRef:ITEMS[3],rarity:"uncommon",desc:"Плазменный корпус"},
   {id:"bonus_score_boost",name:"Ускоритель очков (+15%)",emoji:"⚡",kind:"bonus",bonusKey:"scoreMult",step:0.15,maxVal:0.75,rarity:"uncommon",desc:"Постоянно увеличивает прирост очков в полёте на +15%"},
-  {id:"bonus_magnet",name:"Магнит кристаллов",emoji:"🧲",kind:"bonus",bonusKey:"magnetLevel",step:1,maxVal:3,rarity:"rare",desc:"Увеличивает радиус притяжения кристаллов в полёте"},
-  {id:"bonus_shield",name:"Энергощит",emoji:"🛡️",kind:"bonus",bonusKey:"shields",step:1,maxVal:3,rarity:"epic",desc:"Спасает от 1 столкновения с астероидом в полёте"},
-  {id:"bonus_crystal_pack",name:"Связка кристаллов (+60 💎)",emoji:"💰",kind:"crystals",amount:60,rarity:"common",desc:"Мгновенно начисляет +60 кристаллов на баланс"},
-  {id:"bonus_shard_pack",name:"Ядро осколков (+25 ✨)",emoji:"🔮",kind:"shards",amount:25,rarity:"uncommon",desc:"Добавляет +25 осколков для улучшения сборщика"},
+  {id:"shards_25",name:"Ядро осколков (+25 ✨)",emoji:"🔮",kind:"shards",amount:25,rarity:"uncommon",desc:"Добавляет +25 осколков для улучшения сборщика"},
 
-  // Кастомизация и апгрейд сборщика из пула предметов
-  ...ITEMS.map(it => ({
-    id:"item_" + it.id,
-    name:it.name,
-    emoji:it.emoji,
-    kind:"item",
-    itemRef:it,
-    rarity:it.rarity,
-    desc:it.desc
-  }))
+  // Редкий (rare) — 4 приза
+  {id:"ship_valkyrie",name:"Корабль Валькирия",emoji:"🛰️",kind:"ship",shipId:5,rarity:"rare",desc:"Красивый корабль-разведчик добавлен в ангар!"},
+  {id:"item_trail_pink",name:"Розовый импульс",emoji:"💗",kind:"item",itemRef:ITEMS[4],rarity:"rare",desc:"Розовый след двигателя"},
+  {id:"item_skin_gold",name:"Золотой реликт",emoji:"🌟",kind:"item",itemRef:ITEMS[5],rarity:"rare",desc:"Золотое покрытие"},
+  {id:"bonus_magnet",name:"Магнит кристаллов",emoji:"🧲",kind:"bonus",bonusKey:"magnetLevel",step:1,maxVal:3,rarity:"rare",desc:"Увеличивает радиус притяжения кристаллов в полёте"},
+
+  // Эпический (epic) — 4 приза
+  {id:"ship_aurora",name:"Корабль Аврора",emoji:"✨",kind:"ship",shipId:6,rarity:"epic",desc:"Сверкающий звёздный крейсер добавлен в ангар!"},
+  {id:"item_trail_lightning",name:"Молния",emoji:"⚡",kind:"item",itemRef:ITEMS[6],rarity:"epic",desc:"Электрический след"},
+  {id:"item_skin_void",name:"Пустотный",emoji:"🌑",kind:"item",itemRef:ITEMS[7],rarity:"epic",desc:"Корпус из энергии разлома"},
+  {id:"bonus_shield",name:"Энергощит",emoji:"🛡️",kind:"bonus",bonusKey:"shields",step:1,maxVal:3,rarity:"epic",desc:"Спасает от 1 столкновения с астероидом в полёте"},
+
+  // Легендарный (legendary) — 3 приза
+  {id:"ship_chronos",name:"Корабль Хронос",emoji:"🪐",kind:"ship",shipId:7,rarity:"legendary",desc:"Легендарный корабль повелителя разломов!"},
+  {id:"item_skin_galaxy",name:"Галактика",emoji:"🌌",kind:"item",itemRef:ITEMS[8],rarity:"legendary",desc:"Легендарное звёздное сияние"},
+  {id:"item_trail_rift",name:"След разлома",emoji:"🌀",kind:"item",itemRef:ITEMS[9],rarity:"legendary",desc:"Редкий след энергии разлома"}
 ];
 
 const CASES = [
@@ -504,6 +742,7 @@ const DEFAULT_SAVE = {
   equippedTrail:"",
   shards:0,
   collectorLevel:0,
+  soundEnabled:true,
   bonuses:{
     scoreMult:0,
     magnetLevel:0,
@@ -531,6 +770,7 @@ function loadSave() {
     save.collectorLevel = Math.max(0, Math.min(3, Number(save.collectorLevel) || 0));
     if (typeof save.equippedSkin !== "string") save.equippedSkin = "";
     if (typeof save.equippedTrail !== "string") save.equippedTrail = "";
+    save.soundEnabled = parsed.soundEnabled !== false;
 
     const b = parsed && typeof parsed.bonuses === "object" && parsed.bonuses ? parsed.bonuses : {};
     save.bonuses = {
@@ -552,8 +792,9 @@ function loadSave() {
       save.selectedWorld = 0;
     }
   } catch (e) {
-    save = {...DEFAULT_SAVE, ownedShips:[0], bonuses:{scoreMult:0,magnetLevel:0,shields:0}};
+    save = {...DEFAULT_SAVE, ownedShips:[0], soundEnabled:true, bonuses:{scoreMult:0,magnetLevel:0,shields:0}};
   }
+  sfx.setEnabled(save.soundEnabled);
 }
 
 function saveData() {
@@ -567,6 +808,35 @@ function saveData() {
 loadSave();
 
 const $ = id => document.getElementById(id);
+
+function updateSoundButton() {
+  const btn = $("soundToggleButton");
+  if (!btn) return;
+  if (save.soundEnabled) {
+    btn.textContent = "🔊 Звук";
+    btn.classList.remove("muted");
+  } else {
+    btn.textContent = "🔇 Без звука";
+    btn.classList.add("muted");
+  }
+}
+
+const soundBtn = $("soundToggleButton");
+if (soundBtn) {
+  soundBtn.addEventListener("click", () => {
+    save.soundEnabled = !save.soundEnabled;
+    sfx.setEnabled(save.soundEnabled);
+    saveData();
+    updateSoundButton();
+    if (save.soundEnabled) {
+      sfx.ensureCtx();
+      sfx.click();
+      toast("Звук включён");
+    } else {
+      toast("Звук выключен");
+    }
+  });
+}
 
 const screens = [
   "menuScreen","shipsScreen","worldsScreen",
@@ -613,6 +883,24 @@ function renderBonusesBox() {
   `;
 }
 
+function renderRarityPools() {
+  const box = $("rarityPoolsBox");
+  if (!box) return;
+  if ($("totalPrizesCount")) $("totalPrizesCount").textContent = String(CASE_PRIZES.length);
+
+  box.innerHTML = RARITY_ORDER.map(rarityKey => {
+    const r = RARITIES[rarityKey];
+    const group = CASE_PRIZES.filter(p => p.rarity === rarityKey);
+    const chips = group.map(p => `<span class="pool-chip">${p.emoji} ${p.name}</span>`).join("");
+    return `
+      <div class="pool-group">
+        <span class="rarity ${r.className}">${r.name} (${group.length})</span>
+        <div class="pool-list">${chips}</div>
+      </div>
+    `;
+  }).join("");
+}
+
 function updateUI() {
   if ($("crystals")) $("crystals").textContent = save.crystals;
   if ($("shopCrystals")) $("shopCrystals").textContent = save.crystals;
@@ -626,6 +914,7 @@ function updateUI() {
   if ($("menuShip")) $("menuShip").textContent = shipObj.emoji || "🚀";
   if ($("shardsCount")) $("shardsCount").textContent = save.shards;
   if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
+  updateSoundButton();
   renderBonusesBox();
 }
 
@@ -659,6 +948,7 @@ function renderShips() {
     `;
 
     card.querySelector("button").addEventListener("click", () => {
+      sfx.click();
       if (owned) {
         save.selectedShip = ship.id;
         saveData();
@@ -686,6 +976,7 @@ function renderShips() {
       saveData();
       renderShips();
       updateUI();
+      sfx.winPrize("rare");
       toast("Новый корабль куплен!");
     });
 
@@ -718,6 +1009,7 @@ function renderWorlds() {
 
     card.querySelector("button").addEventListener("click", () => {
       if (!unlocked) return;
+      sfx.click();
       save.selectedWorld = world.id;
       saveData();
       renderWorlds();
@@ -822,19 +1114,20 @@ function buildRouletteStrip(box, winnerPrize) {
 
   for (let i = 0; i < totalSlots; i++) {
     const p = i === winIndex ? winnerPrize : pickCasePrize(box);
+    const r = RARITIES[p.rarity] || RARITIES.common;
     const slot = document.createElement("div");
-    slot.className = "roulette-slot";
+    slot.className = `roulette-slot ${r.slotClass}`;
     slot.innerHTML = `
       <div class="slot-emoji">${p.emoji}</div>
       <div class="slot-name">${p.name}</div>
-      <div class="slot-sub">${RARITIES[p.rarity]?.name || ""}</div>
+      <div class="slot-sub" style="color:${r.color}">${r.name}</div>
     `;
     track.appendChild(slot);
   }
 
   const firstSlot = track.querySelector(".roulette-slot");
   const slotRect = firstSlot ? firstSlot.getBoundingClientRect() : { width: 92 };
-  const slotWidth = slotRect.width + 10; // width + gap 10px
+  const slotWidth = slotRect.width + 10;
   return { slotWidth, winIndex };
 }
 
@@ -847,9 +1140,14 @@ function setCaseButtonsDisabled(disabled) {
 function openCase(box) {
   if (caseSpinning) return;
   if (save.crystals < box.price) {
+    sfx.click();
     toast("Недостаточно кристаллов для кейса");
     return;
   }
+
+  sfx.ensureCtx();
+  sfx.click();
+  sfx.startRouletteTicks(2600);
 
   caseSpinning = true;
   setCaseButtonsDisabled(true);
@@ -869,7 +1167,7 @@ function openCase(box) {
   const wrap = $("rouletteWrap");
   const wrapWidth = wrap ? wrap.clientWidth : 340;
   const slotCenterOffset = (slotWidth - 10) / 2;
-  const jitter = (Math.random() - 0.5) * 26;
+  const jitter = (Math.random() - 0.5) * 24;
   const targetOffset = Math.max(0, winIndex * slotWidth + slotCenterOffset - wrapWidth / 2 + jitter);
 
   const track = $("rouletteTrack");
@@ -889,6 +1187,7 @@ function openCase(box) {
     saveData();
     updateUI();
     renderShips();
+    sfx.winPrize(winnerPrize.rarity);
 
     if (resultEl) {
       resultEl.classList.remove("hidden");
@@ -902,7 +1201,10 @@ function openCase(box) {
       `;
       const closeBtn = $("caseResultClose");
       if (closeBtn) {
-        closeBtn.addEventListener("click", () => resultEl.classList.add("hidden"));
+        closeBtn.addEventListener("click", () => {
+          sfx.click();
+          resultEl.classList.add("hidden");
+        });
       }
     }
 
@@ -919,8 +1221,8 @@ function renderCases() {
   CASES.forEach(box => {
     const card = document.createElement("div");
     card.className = "case-card";
-    const chances = Object.entries(box.weights).filter(([, v]) => v > 0)
-      .map(([k, v]) => `${RARITIES[k].name}: ${v}%`).join(" · ");
+    const chances = RARITY_ORDER.filter(k => box.weights[k] > 0)
+      .map(k => `${RARITIES[k].name}: ${box.weights[k]}%`).join(" · ");
     card.innerHTML = `
       <div class="case-art">${box.emoji}</div>
       <b>${box.name}</b>
@@ -932,6 +1234,7 @@ function renderCases() {
     list.appendChild(card);
   });
   renderBonusesBox();
+  renderRarityPools();
 }
 
 function renderInventory() {
@@ -953,6 +1256,7 @@ function renderInventory() {
       ${item.type === "upgrade" ? "Улучшение" : equipped ? "Используется" : "Экипировать"}</button>`;
     if (item.type !== "upgrade") {
       card.querySelector("button").addEventListener("click", () => {
+        sfx.click();
         if (item.type === "skin") save.equippedSkin = item.id;
         if (item.type === "trail") save.equippedTrail = item.id;
         saveData(); renderInventory(); updateUI(); toast("Предмет экипирован!");
@@ -967,11 +1271,14 @@ function renderInventory() {
 const upgradeBtn = $("upgradeCollectorButton");
 if (upgradeBtn) {
   upgradeBtn.addEventListener("click", () => {
+    sfx.click();
     if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
     if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
     save.shards -= 30;
     save.collectorLevel++;
-    saveData(); renderInventory(); updateUI(); toast("Сборщик улучшен!");
+    saveData(); renderInventory(); updateUI();
+    sfx.winPrize("rare");
+    toast("Сборщик улучшен!");
   });
 }
 
@@ -1007,6 +1314,8 @@ function loadAdsgram() {
 
 async function watchAd() {
   if (adBusy) return;
+  sfx.ensureCtx();
+  sfx.click();
   adBusy = true;
   const buttons = [$("watchAdButton"), $("watchAdMenuButton")].filter(Boolean);
   const statuses = [$("adStatus"), $("adMenuStatus")].filter(Boolean);
@@ -1026,6 +1335,7 @@ async function watchAd() {
       save.crystals += 25;
       save.totalEarned += 25;
       saveData(); updateUI();
+      sfx.winPrize("common");
       statuses.forEach(status => { status.textContent = "Награда получена!"; });
       toast("🎉 +25 кристаллов!");
     } else {
@@ -1101,6 +1411,8 @@ window.addEventListener("resize", () => {
 });
 
 function startGame() {
+  sfx.ensureCtx();
+  sfx.click();
   if ($("resultModal")) $("resultModal").classList.add("hidden");
   if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   showScreen("gameScreen");
@@ -1121,6 +1433,7 @@ function startGame() {
   if ($("score")) $("score").textContent = "0";
   if ($("runCrystals")) $("runCrystals").textContent = "0";
 
+  sfx.startAmbient(save.selectedWorld || 0);
   cancelAnimationFrame(game.animation);
   game.animation = requestAnimationFrame(loop);
 }
@@ -1130,6 +1443,7 @@ function endGame() {
   game.running = false;
   cancelAnimationFrame(game.animation);
   resetKeys();
+  sfx.gameOver();
 
   const score = Math.floor(game.score);
   const earned = game.crystals;
@@ -1148,6 +1462,8 @@ function endGame() {
 
 function pauseGame() {
   if (!game.running || game.paused) return;
+  sfx.click();
+  sfx.stopAmbient();
   game.paused = true;
   resetKeys();
   if ($("pauseModal")) $("pauseModal").classList.remove("hidden");
@@ -1155,6 +1471,8 @@ function pauseGame() {
 
 function resumeGame() {
   if (!game.running) return;
+  sfx.click();
+  sfx.startAmbient(save.selectedWorld || 0);
   game.paused = false;
   game.lastTime = performance.now();
   if ($("pauseModal")) $("pauseModal").classList.add("hidden");
@@ -1173,6 +1491,7 @@ controlButtons.forEach(([id, direction]) => {
   if (!button) return;
   const press = e => {
     if (e && e.cancelable) e.preventDefault();
+    sfx.ensureCtx();
     game.keys[direction] = true;
     if (typeof button.setPointerCapture === "function" && e && e.pointerId !== undefined) {
       try { button.setPointerCapture(e.pointerId); } catch (_) {}
@@ -1207,6 +1526,7 @@ window.addEventListener("keydown", e => {
   if (!$("gameScreen") || $("gameScreen").classList.contains("hidden")) return;
   const direction = KEY_MAP[e.key];
   if (direction) {
+    sfx.ensureCtx();
     e.preventDefault();
     game.keys[direction] = true;
   }
@@ -1235,6 +1555,7 @@ function moveToPointer(e) {
 if (canvas) {
   canvas.addEventListener("pointerdown", e => {
     if (!game.running || game.paused) return;
+    sfx.ensureCtx();
     canvasPointerActive = true;
     moveToPointer(e);
   });
@@ -1307,6 +1628,7 @@ function updateGame(dt) {
       game.crystals++;
       if (save.collectorLevel > 0 && Math.random() < save.collectorLevel * 0.12) game.crystals++;
       game.objects.splice(i, 1);
+      sfx.crystal();
       if ($("runCrystals")) $("runCrystals").textContent = game.crystals;
       continue;
     }
@@ -1315,6 +1637,7 @@ function updateGame(dt) {
       if (game.shieldsLeft > 0) {
         game.shieldsLeft--;
         game.objects.splice(i, 1);
+        sfx.shieldBlock();
         toast("🛡️ Энергощит отразил астероид!");
         continue;
       }
@@ -1466,6 +1789,8 @@ function loop(timestamp) {
 }
 
 function goHome() {
+  sfx.click();
+  sfx.stopAmbient();
   game.running = false;
   game.paused = false;
   cancelAnimationFrame(game.animation);
@@ -1475,16 +1800,17 @@ function goHome() {
 
 function handleAction(action) {
   if (action === "play") startGame();
-  if (action === "ships") { renderShips(); showScreen("shipsScreen"); }
-  if (action === "worlds") { renderWorlds(); showScreen("worldsScreen"); }
-  if (action === "shop") showScreen("shopScreen");
-  if (action === "stats") showScreen("statsScreen");
+  if (action === "ships") { sfx.click(); renderShips(); showScreen("shipsScreen"); }
+  if (action === "worlds") { sfx.click(); renderWorlds(); showScreen("worldsScreen"); }
+  if (action === "shop") { sfx.click(); showScreen("shopScreen"); }
+  if (action === "stats") { sfx.click(); showScreen("statsScreen"); }
   if (action === "cases") {
+    sfx.click();
     renderCases();
     if ($("caseResult")) $("caseResult").classList.add("hidden");
     showScreen("casesScreen");
   }
-  if (action === "inventory") { renderInventory(); showScreen("inventoryScreen"); }
+  if (action === "inventory") { sfx.click(); renderInventory(); showScreen("inventoryScreen"); }
   if (action === "home") goHome();
   if (action === "pause") pauseGame();
 }
