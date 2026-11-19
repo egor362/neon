@@ -154,7 +154,81 @@ h2 {font-size:22px;margin:8px 0 16px}
 .r-legendary {background:#705018;color:#ffe19a}
 .case-card {background:linear-gradient(145deg,#1d3158,#121a35);border:1px solid #49618e;border-radius:17px;padding:14px;text-align:center}
 .case-art {font-size:48px;margin:8px}
-.reward-reveal {border:1px solid #6079ad;background:#1c2b50;border-radius:16px;padding:18px;margin:12px 0}
+.reward-reveal {border:1px solid #6079ad;background:#1c2b50;border-radius:16px;padding:18px;margin:12px 0;text-align:center}
+
+/* РУЛЕТКА КЕЙСОВ */
+.roulette-wrap {
+  position:relative;
+  overflow:hidden;
+  border:2px solid #48eaff88;
+  background:#0a1026;
+  border-radius:16px;
+  padding:12px 0;
+  margin:14px 0;
+  box-shadow:inset 0 0 24px #0009;
+}
+.roulette-pointer {
+  position:absolute;
+  top:0;
+  bottom:0;
+  left:50%;
+  width:3px;
+  transform:translateX(-50%);
+  background:linear-gradient(180deg,#ffe58b,#ff5ca8,#ffe58b);
+  box-shadow:0 0 12px #ff5ca8;
+  z-index:3;
+  pointer-events:none;
+}
+.roulette-pointer::before {
+  content:"▼";
+  position:absolute;
+  top:-4px;
+  left:50%;
+  transform:translateX(-50%);
+  color:#ffe58b;
+  font-size:14px;
+  text-shadow:0 0 8px #000;
+}
+.roulette-track {
+  display:flex;
+  gap:10px;
+  padding:0 12px;
+  will-change:transform;
+  transform:translateX(0px);
+}
+.roulette-slot {
+  flex:0 0 92px;
+  height:106px;
+  border-radius:13px;
+  background:#152040;
+  border:1px solid #354b7a;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:6px;
+  text-align:center;
+}
+.roulette-slot.winner {
+  border:2px solid #ffe58b;
+  background:#223564;
+  box-shadow:0 0 16px #ffe58b55;
+}
+.roulette-slot .slot-emoji {font-size:32px;line-height:1.1}
+.roulette-slot .slot-name {font-size:11px;font-weight:bold;margin-top:6px;color:#eef3ff;line-height:1.2}
+.roulette-slot .slot-sub {font-size:10px;color:var(--muted);margin-top:2px}
+.bonus-box {
+  background:#141e3b;
+  border:1px solid #2d3e69;
+  border-radius:14px;
+  padding:12px 14px;
+  margin-top:10px;
+  text-align:left;
+  font-size:13px;
+  line-height:1.45;
+  color:#dce6ff;
+}
+
 .footer {text-align:center;color:#7180a7;font-size:11px;margin:25px 0 10px}
 </style>
 </head>
@@ -201,7 +275,7 @@ h2 {font-size:22px;margin:8px 0 16px}
 <section id="shipsScreen" class="hidden">
   <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🚀 Выбор корабля</h2>
-  <p class="subtitle">Выбери корабль для своего путешествия.</p>
+  <p class="subtitle">Выбери корабль для своего путешествия. В кейсах можно выбить эксклюзивные корабли!</p>
   <div class="cards" id="shipsList"></div>
 </section>
 
@@ -225,7 +299,7 @@ h2 {font-size:22px;margin:8px 0 16px}
   </div>
   <div class="panel">
     <b>На что потратить кристаллы?</b>
-    <p class="subtitle">Покупай новые корабли и открывай дополнительные возможности.</p>
+    <p class="subtitle">Покупай новые корабли и открывай кейсы с редкими наградами.</p>
     <button class="secondary" type="button" data-action="ships">🚀 Перейти к кораблям</button>
     <button class="secondary" type="button" data-action="cases" style="margin-top:10px">🎁 Открыть кейсы</button>
     <button class="secondary" type="button" data-action="inventory" style="margin-top:10px">🎒 Моя коллекция</button>
@@ -236,14 +310,30 @@ h2 {font-size:22px;margin:8px 0 16px}
 <section id="casesScreen" class="hidden">
   <button class="secondary back" type="button" data-action="home">← Назад</button>
   <h2>🎁 Космические кейсы</h2>
-  <p class="subtitle">Открывай кейсы за игровые кристаллы. Шансы выпадения показаны заранее.</p>
-  <div class="cards" id="casesList"></div>
-  <div class="panel">
-    <b>Редкости предметов</b>
-    <p><span class="rarity r-common">Обычный</span> <span class="rarity r-uncommon">Необычный</span></p>
-    <p><span class="rarity r-rare">Редкий</span> <span class="rarity r-epic">Эпический</span> <span class="rarity r-legendary">Легендарный</span></p>
+  <p class="subtitle">Крути рулетку кейсов: внутри красивые корабли, раскраски, следы, осколки и полезные бонусы к полёту.</p>
+
+  <div class="panel" id="roulettePanel">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <b id="rouletteTitle">Рулетка кейса</b>
+      <span class="pill" id="rouletteCaseBadge">Выбери кейс</span>
+    </div>
+    <div class="roulette-wrap" id="rouletteWrap">
+      <div class="roulette-pointer"></div>
+      <div class="roulette-track" id="rouletteTrack"></div>
+    </div>
+    <div id="caseResult" class="reward-reveal hidden"></div>
   </div>
-  <div id="caseResult" class="reward-reveal hidden"></div>
+
+  <div class="cards" id="casesList"></div>
+
+  <div class="panel">
+    <b>Активные бонусы из кейсов</b>
+    <div class="bonus-box" id="activeBonusesBox"></div>
+    <div style="margin-top:12px">
+      <b>Редкости предметов</b>
+      <p style="margin:8px 0 0"><span class="rarity r-common">Обычный</span> <span class="rarity r-uncommon">Необычный</span> <span class="rarity r-rare">Редкий</span> <span class="rarity r-epic">Эпический</span> <span class="rarity r-legendary">Легендарный</span></p>
+    </div>
+  </div>
 </section>
 
 <!-- КОЛЛЕКЦИЯ -->
@@ -267,7 +357,7 @@ h2 {font-size:22px;margin:8px 0 16px}
     <p>Лучший результат: <b id="statsBest">0</b></p>
     <p>Всего собрано кристаллов: <b id="statsEarned">0</b></p>
     <p>Открыто миров: <b id="statsWorlds">1</b> / 5</p>
-    <p>Куплено кораблей: <b id="statsShips">1</b></p>
+    <p>Куплено и выбито кораблей: <b id="statsShips">1</b> / <span id="statsTotalShips">8</span></p>
   </div>
 </section>
 
@@ -291,7 +381,7 @@ h2 {font-size:22px;margin:8px 0 16px}
   <p class="subtitle" style="text-align:center">Управляй кораблём в четырёх направлениях, уклоняйся от препятствий и собирай кристаллы.</p>
 </section>
 
-<div class="footer">RIFT RUNNER · версия 4.1</div>
+<div class="footer">RIFT RUNNER · версия 4.2</div>
 </div>
 
 <div id="toast"></div>
@@ -327,12 +417,16 @@ if (tg) {
   try { tg.setHeaderColor("#080b1b"); } catch (e) {}
 }
 
+/* КОРАБЛИ (включая эксклюзивные корабли из кейсов: id 5, 6, 7) */
 const SHIPS = [
   {id:0,name:"Старт",emoji:"🚀",price:0,desc:"Начальный корабль"},
   {id:1,name:"Фантом",emoji:"🛸",price:100,desc:"Лёгкий и быстрый"},
   {id:2,name:"Комета",emoji:"☄️",price:200,desc:"Для дальних путешествий"},
   {id:3,name:"Неон",emoji:"🌠",price:350,desc:"Корабль исследователей"},
-  {id:4,name:"Рифт",emoji:"🚀",price:500,desc:"Редкий космический корабль"}
+  {id:4,name:"Рифт",emoji:"🚀",price:500,desc:"Редкий космический корабль"},
+  {id:5,name:"Валькирия",emoji:"🛰️",price:0,caseOnly:true,rarity:"rare",desc:"Эксклюзив кейсов: грациозный разведчик"},
+  {id:6,name:"Аврора",emoji:"✨",price:0,caseOnly:true,rarity:"epic",desc:"Эксклюзив кейсов: сияющий крейсер"},
+  {id:7,name:"Хронос",emoji:"🪐",price:0,caseOnly:true,rarity:"legendary",desc:"Эксклюзив кейсов: повелитель разломов"}
 ];
 
 const WORLDS = [
@@ -365,11 +459,37 @@ const ITEMS = [
   {id:"upgrade_collector",name:"Сборщик кристаллов",emoji:"💎",type:"upgrade",rarity:"rare",desc:"Повышает шанс дополнительного кристалла"}
 ];
 
+/* СПЕЦИАЛЬНЫЕ НАГРАДЫ И БОНУСЫ ИЗ КЕЙСОВ */
+const CASE_PRIZES = [
+  // Красивые эксклюзивные корабли
+  {id:"ship_valkyrie",name:"Корабль Валькирия",emoji:"🛰️",kind:"ship",shipId:5,rarity:"rare",desc:"Красивый корабль-разведчик добавлен в ангар!"},
+  {id:"ship_aurora",name:"Корабль Аврора",emoji:"✨",kind:"ship",shipId:6,rarity:"epic",desc:"Сверкающий звёздный крейсер добавлен в ангар!"},
+  {id:"ship_chronos",name:"Корабль Хронос",emoji:"🪐",kind:"ship",shipId:7,rarity:"legendary",desc:"Легендарный корабль повелителя разломов!"},
+
+  // Бонусы к игровому процессу и балансу
+  {id:"bonus_score_boost",name:"Ускоритель очков (+15%)",emoji:"⚡",kind:"bonus",bonusKey:"scoreMult",step:0.15,maxVal:0.75,rarity:"uncommon",desc:"Постоянно увеличивает прирост очков в полёте на +15%"},
+  {id:"bonus_magnet",name:"Магнит кристаллов",emoji:"🧲",kind:"bonus",bonusKey:"magnetLevel",step:1,maxVal:3,rarity:"rare",desc:"Увеличивает радиус притяжения кристаллов в полёте"},
+  {id:"bonus_shield",name:"Энергощит",emoji:"🛡️",kind:"bonus",bonusKey:"shields",step:1,maxVal:3,rarity:"epic",desc:"Спасает от 1 столкновения с астероидом в полёте"},
+  {id:"bonus_crystal_pack",name:"Связка кристаллов (+60 💎)",emoji:"💰",kind:"crystals",amount:60,rarity:"common",desc:"Мгновенно начисляет +60 кристаллов на баланс"},
+  {id:"bonus_shard_pack",name:"Ядро осколков (+25 ✨)",emoji:"🔮",kind:"shards",amount:25,rarity:"uncommon",desc:"Добавляет +25 осколков для улучшения сборщика"},
+
+  // Кастомизация и апгрейд сборщика из пула предметов
+  ...ITEMS.map(it => ({
+    id:"item_" + it.id,
+    name:it.name,
+    emoji:it.emoji,
+    kind:"item",
+    itemRef:it,
+    rarity:it.rarity,
+    desc:it.desc
+  }))
+];
+
 const CASES = [
-  {id:"basic",name:"Стандартный",emoji:"📦",price:100,weights:{common:65,uncommon:25,rare:8,epic:1.8,legendary:0.2}},
-  {id:"rare",name:"Редкий",emoji:"🧰",price:250,weights:{common:35,uncommon:40,rare:20,epic:4.5,legendary:0.5}},
-  {id:"epic",name:"Эпический",emoji:"🎁",price:500,weights:{common:10,uncommon:25,rare:40,epic:22,legendary:3}},
-  {id:"cosmic",name:"Космический",emoji:"🌠",price:1000,weights:{common:0,uncommon:0,rare:5,epic:55,legendary:40}}
+  {id:"basic",name:"Стандартный",emoji:"📦",price:100,weights:{common:50,uncommon:32,rare:13,epic:4,legendary:1}},
+  {id:"rare",name:"Редкий",emoji:"🧰",price:250,weights:{common:22,uncommon:35,rare:28,epic:11,legendary:4}},
+  {id:"epic",name:"Эпический",emoji:"🎁",price:500,weights:{common:5,uncommon:20,rare:35,epic:28,legendary:12}},
+  {id:"cosmic",name:"Космический",emoji:"🌠",price:1000,weights:{common:0,uncommon:5,rare:15,epic:42,legendary:38}}
 ];
 
 const DEFAULT_SAVE = {
@@ -383,7 +503,12 @@ const DEFAULT_SAVE = {
   equippedSkin:"",
   equippedTrail:"",
   shards:0,
-  collectorLevel:0
+  collectorLevel:0,
+  bonuses:{
+    scoreMult:0,
+    magnetLevel:0,
+    shields:0
+  }
 };
 
 let save;
@@ -396,11 +521,23 @@ function loadSave() {
 
     if (!Array.isArray(save.ownedShips)) save.ownedShips = [0];
     if (!save.ownedShips.includes(0)) save.ownedShips.push(0);
+    save.ownedShips = save.ownedShips
+      .map(id => Number(id))
+      .filter(id => SHIPS.some(s => s.id === id));
+    if (!save.ownedShips.length) save.ownedShips = [0];
+
     if (!Array.isArray(save.ownedItems)) save.ownedItems = [];
     save.shards = Math.max(0, Number(save.shards) || 0);
     save.collectorLevel = Math.max(0, Math.min(3, Number(save.collectorLevel) || 0));
     if (typeof save.equippedSkin !== "string") save.equippedSkin = "";
     if (typeof save.equippedTrail !== "string") save.equippedTrail = "";
+
+    const b = parsed && typeof parsed.bonuses === "object" && parsed.bonuses ? parsed.bonuses : {};
+    save.bonuses = {
+      scoreMult:Math.max(0, Math.min(0.75, Number(b.scoreMult) || 0)),
+      magnetLevel:Math.max(0, Math.min(3, Number(b.magnetLevel) || 0)),
+      shields:Math.max(0, Math.min(3, Number(b.shields) || 0))
+    };
 
     save.crystals = Math.max(0, Number(save.crystals) || 0);
     save.best = Math.max(0, Number(save.best) || 0);
@@ -408,14 +545,14 @@ function loadSave() {
     save.selectedShip = Number(save.selectedShip) || 0;
     save.selectedWorld = Number(save.selectedWorld) || 0;
 
-    if (!SHIPS.some(s => s.id === save.selectedShip && save.ownedShips.includes(s.id))) {
+    if (!save.ownedShips.includes(save.selectedShip)) {
       save.selectedShip = 0;
     }
     if (!WORLDS.some(w => w.id === save.selectedWorld && save.best >= w.need)) {
       save.selectedWorld = 0;
     }
   } catch (e) {
-    save = {...DEFAULT_SAVE, ownedShips:[0]};
+    save = {...DEFAULT_SAVE, ownedShips:[0], bonuses:{scoreMult:0,magnetLevel:0,shields:0}};
   }
 }
 
@@ -463,6 +600,19 @@ function unlockedWorldCount() {
   return WORLDS.filter(w => save.best >= w.need).length;
 }
 
+function renderBonusesBox() {
+  const box = $("activeBonusesBox");
+  if (!box) return;
+  const multPct = Math.round((save.bonuses.scoreMult || 0) * 100);
+  const magLv = save.bonuses.magnetLevel || 0;
+  const shLv = save.bonuses.shields || 0;
+  box.innerHTML = `
+    <div>⚡ Множитель очков: <b>+${multPct}%</b></div>
+    <div>🧲 Магнит кристаллов: <b>Уровень ${magLv} / 3</b></div>
+    <div>🛡️ Запас энергощитов на полёт: <b>${shLv} / 3</b></div>
+  `;
+}
+
 function updateUI() {
   if ($("crystals")) $("crystals").textContent = save.crystals;
   if ($("shopCrystals")) $("shopCrystals").textContent = save.crystals;
@@ -471,11 +621,15 @@ function updateUI() {
   if ($("statsEarned")) $("statsEarned").textContent = save.totalEarned;
   if ($("statsWorlds")) $("statsWorlds").textContent = unlockedWorldCount();
   if ($("statsShips")) $("statsShips").textContent = save.ownedShips.length;
-  if ($("menuShip")) $("menuShip").textContent = SHIPS[save.selectedShip]?.emoji || "🚀";
+  if ($("statsTotalShips")) $("statsTotalShips").textContent = SHIPS.length;
+  const shipObj = SHIPS.find(s => s.id === save.selectedShip) || SHIPS[0];
+  if ($("menuShip")) $("menuShip").textContent = shipObj.emoji || "🚀";
   if ($("shardsCount")) $("shardsCount").textContent = save.shards;
   if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
+  renderBonusesBox();
 }
 
+/* КОРАБЛИ */
 function renderShips() {
   const list = $("shipsList");
   if (!list) return;
@@ -488,14 +642,20 @@ function renderShips() {
     const card = document.createElement("div");
     card.className = "item" + (selected ? " selected" : "");
 
+    const badgeText = owned
+      ? (selected ? "Выбран" : "В ангаре")
+      : (ship.caseOnly ? "🎁 Только в кейсах" : "💎 " + ship.price);
+
+    const btnText = owned
+      ? (selected ? "Выбран" : "Выбрать")
+      : (ship.caseOnly ? "В кейсы" : "Купить");
+
     card.innerHTML = `
       <div class="emoji">${ship.emoji}</div>
       <div class="name">${ship.name}</div>
       <div class="desc">${ship.desc}</div>
-      <div class="pill">${owned ? (selected ? "Выбран" : "Куплен") : "💎 " + ship.price}</div>
-      <button class="secondary" type="button" style="width:100%">
-        ${owned ? (selected ? "Выбран" : "Выбрать") : "Купить"}
-      </button>
+      <div class="pill">${badgeText}</div>
+      <button class="secondary" type="button" style="width:100%">${btnText}</button>
     `;
 
     card.querySelector("button").addEventListener("click", () => {
@@ -505,6 +665,13 @@ function renderShips() {
         renderShips();
         updateUI();
         toast("Корабль выбран!");
+        return;
+      }
+
+      if (ship.caseOnly) {
+        renderCases();
+        showScreen("casesScreen");
+        toast("Этот корабль можно выбить из кейсов!");
         return;
       }
 
@@ -526,6 +693,7 @@ function renderShips() {
   });
 }
 
+/* МИРЫ */
 function renderWorlds() {
   const list = $("worldsList");
   if (!list) return;
@@ -560,9 +728,188 @@ function renderWorlds() {
   });
 }
 
-function rarityBadge(item) {
-  const r = RARITIES[item.rarity] || RARITIES.common;
+/* КЕЙСЫ, РУЛЕТКА И КОЛЛЕКЦИЯ */
+let caseSpinning = false;
+
+function rarityBadge(rarityKey) {
+  const r = RARITIES[rarityKey] || RARITIES.common;
   return `<span class="rarity ${r.className}">${r.name}</span>`;
+}
+
+function pickRarity(weights) {
+  const entries = Object.entries(weights).filter(([, v]) => Number(v) > 0);
+  const sum = entries.reduce((acc, [, v]) => acc + Number(v), 0);
+  const roll = Math.random() * (sum || 100);
+  let total = 0;
+  for (const [rarity, weight] of entries) {
+    total += Number(weight);
+    if (roll <= total) return rarity;
+  }
+  return entries[0]?.[0] || "common";
+}
+
+function pickCasePrize(box) {
+  const chosenRarity = pickRarity(box.weights);
+  const pool = CASE_PRIZES.filter(p => p.rarity === chosenRarity);
+  if (pool.length) {
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  return CASE_PRIZES[Math.floor(Math.random() * CASE_PRIZES.length)];
+}
+
+function applyPrizeReward(prize) {
+  if (prize.kind === "ship") {
+    if (!save.ownedShips.includes(prize.shipId)) {
+      save.ownedShips.push(prize.shipId);
+      save.selectedShip = prize.shipId;
+      return "Новый корабль добавлен в ангар и выбран!";
+    }
+    const shardsBonus = RARITIES[prize.rarity]?.shards || 20;
+    save.shards += shardsBonus;
+    return `Корабль уже был в ангаре — начислено +${shardsBonus} осколков!`;
+  }
+
+  if (prize.kind === "crystals") {
+    save.crystals += prize.amount;
+    save.totalEarned += prize.amount;
+    return `На баланс зачислено +${prize.amount} кристаллов!`;
+  }
+
+  if (prize.kind === "shards") {
+    save.shards += prize.amount;
+    return `Добавлено +${prize.amount} осколков!`;
+  }
+
+  if (prize.kind === "bonus") {
+    const cur = Number(save.bonuses[prize.bonusKey]) || 0;
+    if (cur < prize.maxVal) {
+      save.bonuses[prize.bonusKey] = Math.min(prize.maxVal, Number((cur + prize.step).toFixed(2)));
+      return "Бонус усилен и уже действует в полётах!";
+    }
+    save.shards += 15;
+    return "Бонус на максимуме — получено +15 осколков!";
+  }
+
+  if (prize.kind === "item" && prize.itemRef) {
+    const it = prize.itemRef;
+    if (it.type === "upgrade" && save.collectorLevel < 3) {
+      save.collectorLevel++;
+      return `Сборщик кристаллов улучшен до уровня ${save.collectorLevel}!`;
+    }
+    if (save.ownedItems.includes(it.id)) {
+      const amount = RARITIES[it.rarity]?.shards || 10;
+      save.shards += amount;
+      return `Дубликат обменян на +${amount} осколков.`;
+    }
+    save.ownedItems.push(it.id);
+    if (it.type === "skin" && !save.equippedSkin) save.equippedSkin = it.id;
+    if (it.type === "trail" && !save.equippedTrail) save.equippedTrail = it.id;
+    return "Предмет добавлен в коллекцию!";
+  }
+
+  return "Награда получена!";
+}
+
+function buildRouletteStrip(box, winnerPrize) {
+  const track = $("rouletteTrack");
+  if (!track) return { slotWidth: 102, winIndex: 22 };
+
+  const totalSlots = 28;
+  const winIndex = 22;
+  track.style.transition = "none";
+  track.style.transform = "translateX(0px)";
+  track.innerHTML = "";
+
+  for (let i = 0; i < totalSlots; i++) {
+    const p = i === winIndex ? winnerPrize : pickCasePrize(box);
+    const slot = document.createElement("div");
+    slot.className = "roulette-slot";
+    slot.innerHTML = `
+      <div class="slot-emoji">${p.emoji}</div>
+      <div class="slot-name">${p.name}</div>
+      <div class="slot-sub">${RARITIES[p.rarity]?.name || ""}</div>
+    `;
+    track.appendChild(slot);
+  }
+
+  const firstSlot = track.querySelector(".roulette-slot");
+  const slotRect = firstSlot ? firstSlot.getBoundingClientRect() : { width: 92 };
+  const slotWidth = slotRect.width + 10; // width + gap 10px
+  return { slotWidth, winIndex };
+}
+
+function setCaseButtonsDisabled(disabled) {
+  document.querySelectorAll("#casesList button").forEach(btn => {
+    btn.disabled = disabled;
+  });
+}
+
+function openCase(box) {
+  if (caseSpinning) return;
+  if (save.crystals < box.price) {
+    toast("Недостаточно кристаллов для кейса");
+    return;
+  }
+
+  caseSpinning = true;
+  setCaseButtonsDisabled(true);
+
+  save.crystals -= box.price;
+  saveData();
+  updateUI();
+
+  if ($("rouletteTitle")) $("rouletteTitle").textContent = "Крутим: " + box.name;
+  if ($("rouletteCaseBadge")) $("rouletteCaseBadge").textContent = "💎 " + box.price;
+  const resultEl = $("caseResult");
+  if (resultEl) resultEl.classList.add("hidden");
+
+  const winnerPrize = pickCasePrize(box);
+  const { slotWidth, winIndex } = buildRouletteStrip(box, winnerPrize);
+
+  const wrap = $("rouletteWrap");
+  const wrapWidth = wrap ? wrap.clientWidth : 340;
+  const slotCenterOffset = (slotWidth - 10) / 2;
+  const jitter = (Math.random() - 0.5) * 26;
+  const targetOffset = Math.max(0, winIndex * slotWidth + slotCenterOffset - wrapWidth / 2 + jitter);
+
+  const track = $("rouletteTrack");
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (!track) return;
+      track.style.transition = "transform 2.6s cubic-bezier(0.12, 0.82, 0.22, 1)";
+      track.style.transform = `translateX(-${targetOffset}px)`;
+    });
+  });
+
+  setTimeout(() => {
+    const slots = track ? track.querySelectorAll(".roulette-slot") : [];
+    if (slots[winIndex]) slots[winIndex].classList.add("winner");
+
+    const statusMsg = applyPrizeReward(winnerPrize);
+    saveData();
+    updateUI();
+    renderShips();
+
+    if (resultEl) {
+      resultEl.classList.remove("hidden");
+      resultEl.innerHTML = `
+        <div style="font-size:48px">${winnerPrize.emoji}</div>
+        <h2 style="margin:6px 0">${winnerPrize.name}</h2>
+        ${rarityBadge(winnerPrize.rarity)}
+        <p class="subtitle" style="margin:6px 0">${winnerPrize.desc}</p>
+        <b>${statusMsg}</b>
+        <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Забрать</button>
+      `;
+      const closeBtn = $("caseResultClose");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => resultEl.classList.add("hidden"));
+      }
+    }
+
+    toast("🎉 Выпало: " + winnerPrize.name);
+    caseSpinning = false;
+    setCaseButtonsDisabled(false);
+  }, 2700);
 }
 
 function renderCases() {
@@ -574,55 +921,17 @@ function renderCases() {
     card.className = "case-card";
     const chances = Object.entries(box.weights).filter(([, v]) => v > 0)
       .map(([k, v]) => `${RARITIES[k].name}: ${v}%`).join(" · ");
-    card.innerHTML = `<div class="case-art">${box.emoji}</div>
-      <b>${box.name}</b><p class="subtitle">Шансы: ${chances}</p>
+    card.innerHTML = `
+      <div class="case-art">${box.emoji}</div>
+      <b>${box.name}</b>
+      <p class="subtitle" style="font-size:12px">Шансы: ${chances}</p>
       <div class="pill">💎 ${box.price}</div>
-      <button class="primary" type="button" style="margin-top:10px">Открыть</button>`;
+      <button class="primary" type="button" style="margin-top:10px" ${caseSpinning ? "disabled" : ""}>Крутить</button>
+    `;
     card.querySelector("button").addEventListener("click", () => openCase(box));
     list.appendChild(card);
   });
-}
-
-function pickCaseItem(box) {
-  const roll = Math.random() * 100;
-  let total = 0, chosen = "common";
-  for (const [rarity, weight] of Object.entries(box.weights)) {
-    total += weight;
-    if (roll < total) { chosen = rarity; break; }
-  }
-  const pool = ITEMS.filter(item => item.rarity === chosen);
-  return pool[Math.floor(Math.random() * pool.length)] || ITEMS[0];
-}
-
-function openCase(box) {
-  if (save.crystals < box.price) { toast("Недостаточно кристаллов для кейса"); return; }
-  save.crystals -= box.price;
-  const item = pickCaseItem(box);
-  let message = "";
-  if (item.type === "upgrade" && save.collectorLevel < 3) {
-    save.collectorLevel++;
-    message = `Сборщик улучшен до уровня ${save.collectorLevel}!`;
-  } else if (save.ownedItems.includes(item.id)) {
-    const amount = RARITIES[item.rarity].shards;
-    save.shards += amount;
-    message = `Дубликат обменян на ${amount} осколков.`;
-  } else {
-    save.ownedItems.push(item.id);
-    message = "Предмет добавлен в коллекцию!";
-  }
-  saveData();
-  updateUI();
-  const result = $("caseResult");
-  if (result) {
-    result.classList.remove("hidden");
-    result.innerHTML = `<div style="font-size:48px">${item.emoji}</div>
-      <h2>${item.name}</h2>${rarityBadge(item)}
-      <p class="subtitle">${item.desc}</p><b>${message}</b>
-      <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Понятно</button>`;
-    const closeBtn = $("caseResultClose");
-    if (closeBtn) closeBtn.addEventListener("click", () => result.classList.add("hidden"));
-  }
-  toast("🎉 Кейс открыт!");
+  renderBonusesBox();
 }
 
 function renderInventory() {
@@ -639,7 +948,7 @@ function renderInventory() {
     const card = document.createElement("div");
     card.className = "item";
     card.innerHTML = `<div class="emoji">${item.emoji}</div><div class="name">${item.name}</div>
-      ${rarityBadge(item)}<div class="desc">${item.desc}</div>
+      ${rarityBadge(item.rarity)}<div class="desc">${item.desc}</div>
       <button class="secondary" type="button" style="width:100%" ${item.type === "upgrade" ? "disabled" : ""}>
       ${item.type === "upgrade" ? "Улучшение" : equipped ? "Используется" : "Экипировать"}</button>`;
     if (item.type !== "upgrade") {
@@ -666,6 +975,7 @@ if (upgradeBtn) {
   });
 }
 
+/* ADSGRAM REWARD */
 const ADSGRAM_BLOCK_ID = "60401";
 let adController = null;
 let adBusy = false;
@@ -735,6 +1045,7 @@ async function watchAd() {
 if ($("watchAdButton")) $("watchAdButton").addEventListener("click", watchAd);
 if ($("watchAdMenuButton")) $("watchAdMenuButton").addEventListener("click", watchAd);
 
+/* ИГРА */
 const canvas = $("gameCanvas");
 const ctx = canvas ? canvas.getContext("2d") : null;
 
@@ -743,6 +1054,7 @@ let game = {
   paused:false,
   score:0,
   crystals:0,
+  shieldsLeft:0,
   playerX:0.5,
   playerY:0.75,
   objects:[],
@@ -798,6 +1110,7 @@ function startGame() {
   game.paused = false;
   game.score = 0;
   game.crystals = 0;
+  game.shieldsLeft = Number(save.bonuses?.shields) || 0;
   game.playerX = 0.5;
   game.playerY = 0.75;
   game.objects = [];
@@ -957,7 +1270,8 @@ function updateGame(dt) {
   game.playerX = Math.max(0.08, Math.min(0.92, game.playerX));
   game.playerY = Math.max(0.12, Math.min(0.85, game.playerY));
 
-  game.score += dt * 10;
+  const scoreMult = 1 + (Number(save.bonuses?.scoreMult) || 0);
+  game.score += dt * 10 * scoreMult;
   game.spawn += dt;
 
   const spawnDelay = Math.max(0.38, 0.9 - game.score / 1800);
@@ -968,16 +1282,28 @@ function updateGame(dt) {
 
   const px = game.playerX * canvasWidth;
   const py = game.playerY * canvasHeight;
+  const magnetLv = Number(save.bonuses?.magnetLevel) || 0;
+  const magnetRadius = magnetLv > 0 ? 48 + magnetLv * 24 : 0;
+  const pickupRadius = 25 + magnetLv * 4;
 
   for (let i = game.objects.length - 1; i >= 0; i--) {
     const obj = game.objects[i];
     obj.y += obj.speed * dt;
 
-    const dx = obj.x - px;
-    const dy = obj.y - py;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    let dx = obj.x - px;
+    let dy = obj.y - py;
+    let distance = Math.sqrt(dx * dx + dy * dy);
 
-    if (obj.type === "crystal" && distance < 25) {
+    if (obj.type === "crystal" && magnetRadius > 0 && distance > 0 && distance < magnetRadius) {
+      const pull = (160 + magnetLv * 70) * dt;
+      obj.x -= (dx / distance) * Math.min(distance, pull);
+      obj.y -= (dy / distance) * Math.min(distance, pull);
+      dx = obj.x - px;
+      dy = obj.y - py;
+      distance = Math.sqrt(dx * dx + dy * dy);
+    }
+
+    if (obj.type === "crystal" && distance < pickupRadius) {
       game.crystals++;
       if (save.collectorLevel > 0 && Math.random() < save.collectorLevel * 0.12) game.crystals++;
       game.objects.splice(i, 1);
@@ -986,6 +1312,12 @@ function updateGame(dt) {
     }
 
     if (obj.type === "rock" && distance < 27) {
+      if (game.shieldsLeft > 0) {
+        game.shieldsLeft--;
+        game.objects.splice(i, 1);
+        toast("🛡️ Энергощит отразил астероид!");
+        continue;
+      }
       endGame();
       return;
     }
@@ -1012,13 +1344,22 @@ function drawPlayer() {
   const y = game.playerY * canvasHeight;
   const ship = save.selectedShip;
 
-  const colors = ["#48eaff", "#b58aff", "#ffb84d", "#ff5ca8", "#8cffb0"];
+  const colors = ["#48eaff", "#b58aff", "#ffb84d", "#ff5ca8", "#8cffb0", "#66f2ff", "#ffd166", "#d896ff"];
   const equipped = ITEMS.find(item => item.id === save.equippedSkin);
   const trail = ITEMS.find(item => item.id === save.equippedTrail);
   const color = equipped?.color || colors[ship] || colors[0];
 
   ctx.save();
   ctx.translate(x, y);
+
+  if (game.shieldsLeft > 0) {
+    ctx.strokeStyle = "#48eaffaa";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, 28, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
   ctx.shadowColor = color;
   ctx.shadowBlur = 18;
   ctx.fillStyle = color;
@@ -1034,6 +1375,12 @@ function drawPlayer() {
     ctx.moveTo(0, -22); ctx.lineTo(18, 13); ctx.lineTo(0, 7); ctx.lineTo(-18, 13);
   } else if (ship === 4) {
     ctx.moveTo(0, -24); ctx.lineTo(19, -2); ctx.lineTo(13, 15); ctx.lineTo(0, 9); ctx.lineTo(-13, 15); ctx.lineTo(-19, -2);
+  } else if (ship === 5) {
+    ctx.moveTo(0, -24); ctx.lineTo(24, 6); ctx.lineTo(8, 14); ctx.lineTo(0, 4); ctx.lineTo(-8, 14); ctx.lineTo(-24, 6);
+  } else if (ship === 6) {
+    ctx.moveTo(0, -25); ctx.lineTo(16, -6); ctx.lineTo(20, 14); ctx.lineTo(0, 10); ctx.lineTo(-20, 14); ctx.lineTo(-16, -6);
+  } else if (ship === 7) {
+    ctx.moveTo(0, -25); ctx.lineTo(23, -4); ctx.lineTo(11, 16); ctx.lineTo(0, 11); ctx.lineTo(-11, 16); ctx.lineTo(-23, -4);
   } else {
     ctx.moveTo(0, -22); ctx.lineTo(17, 15); ctx.lineTo(0, 8); ctx.lineTo(-17, 15);
   }
