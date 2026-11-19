@@ -432,10 +432,10 @@ h2 {font-size:22px;margin:8px 0 16px}
     <div class="swipe-hint" id="swipeHint">Проведите пальцем</div>
   </div>
 
-  <p class="subtitle" style="text-align:center;margin-top:10px">Проведите пальцем по экрану, чтобы управлять кораблём, уклоняться от препятствий и подбирать бонусы.</p>
+  <p class="subtitle" style="text-align:center;margin-top:10px">Ведите пальцем для управления, подбирайте 🔫 орудие для стрельбы и побеждайте боссов каждые 2000 очков.</p>
 </section>
 
-<div class="footer">RIFT RUNNER · версия 4.6</div>
+<div class="footer">RIFT RUNNER · версия 4.7</div>
 </div>
 
 <div id="toast"></div>
@@ -461,14 +461,34 @@ h2 {font-size:22px;margin:8px 0 16px}
 </div>
 
 <script>
-(() => {
+window.addEventListener("DOMContentLoaded", () => {
 "use strict";
+
+const $ = id => document.getElementById(id);
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    if (existing) {
+      if (window.Adsgram) return resolve();
+      existing.addEventListener("load", () => resolve(), {once:true});
+      existing.addEventListener("error", () => reject(new Error("Script load error")), {once:true});
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = src;
+    s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Script load error"));
+    document.head.appendChild(s);
+  });
+}
 
 const tg = window.Telegram?.WebApp;
 if (tg) {
-  try { tg.ready(); } catch (e) {}
-  try { tg.expand(); } catch (e) {}
-  try { tg.setHeaderColor("#080b1b"); } catch (e) {}
+  try { tg.ready(); } catch (_) {}
+  try { tg.expand(); } catch (_) {}
+  try { tg.setHeaderColor("#080b1b"); } catch (_) {}
 }
 
 /* ЗВУКОВОЙ ДВИЖОК + КОСМИЧЕСКИЙ ЭМБИЕНТ (Web Audio API — без внешних файлов) */
@@ -485,7 +505,7 @@ const sfx = (() => {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return null;
     if (!ctx) {
-      ctx = new AudioCtx();
+      try { ctx = new AudioCtx(); } catch (_) { return null; }
     }
     if (ctx.state === "suspended") {
       ctx.resume().catch(() => {});
@@ -494,62 +514,66 @@ const sfx = (() => {
   }
 
   function playTone(freq, endFreq, duration, type = "sine", gainVal = 0.08, delay = 0) {
-    const ac = ensureCtx();
-    if (!ac) return;
-    const now = ac.currentTime + delay;
-    const osc = ac.createOscillator();
-    const gain = ac.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, now);
-    if (endFreq !== null && endFreq !== freq) {
-      osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
-    }
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(gainVal, now + 0.012);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    osc.connect(gain);
-    gain.connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + duration + 0.02);
+    try {
+      const ac = ensureCtx();
+      if (!ac) return;
+      const now = ac.currentTime + delay;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      if (endFreq !== null && endFreq !== freq) {
+        osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), now + duration);
+      }
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(gainVal, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + duration + 0.02);
+    } catch (_) {}
   }
 
   function playAmbientPulse(worldId = 0) {
     if (!enabled || !ambientActive) return;
-    const ac = ensureCtx();
-    if (!ac) return;
+    try {
+      const ac = ensureCtx();
+      if (!ac) return;
 
-    const scales = [
-      [110, 146.83, 164.81, 220],
-      [98, 130.81, 146.83, 196],
-      [123.47, 164.81, 185, 246.94],
-      [110, 164.81, 196, 246.94],
-      [87.31, 130.81, 174.61, 220]
-    ];
-    const notes = scales[worldId] || scales[0];
-    const note = notes[ambientStep % notes.length];
-    ambientStep++;
+      const scales = [
+        [110, 146.83, 164.81, 220],
+        [98, 130.81, 146.83, 196],
+        [123.47, 164.81, 185, 246.94],
+        [110, 164.81, 196, 246.94],
+        [87.31, 130.81, 174.61, 220]
+      ];
+      const notes = scales[worldId] || scales[0];
+      const note = notes[ambientStep % notes.length];
+      ambientStep++;
 
-    const now = ac.currentTime;
-    const osc = ac.createOscillator();
-    const filter = ac.createBiquadFilter();
-    const gain = ac.createGain();
+      const now = ac.currentTime;
+      const osc = ac.createOscillator();
+      const filter = ac.createBiquadFilter();
+      const gain = ac.createGain();
 
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(note, now);
-    osc.frequency.exponentialRampToValueAtTime(note * 1.015, now + 0.9);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(note, now);
+      osc.frequency.exponentialRampToValueAtTime(note * 1.015, now + 0.9);
 
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(420, now);
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(420, now);
 
-    gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.linearRampToValueAtTime(0.022, now + 0.22);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.022, now + 0.22);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ac.destination);
-    osc.start(now);
-    osc.stop(now + 1.0);
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ac.destination);
+      osc.start(now);
+      osc.stop(now + 1.0);
+    } catch (_) {}
   }
 
   function startAmbient(worldId = 0) {
@@ -583,6 +607,20 @@ const sfx = (() => {
 
   function click() {
     playTone(520, 680, 0.055, "triangle", 0.05);
+  }
+
+  function shoot() {
+    playTone(920, 340, 0.06, "sawtooth", 0.045);
+  }
+
+  function hitEnemy() {
+    playTone(240, 120, 0.07, "square", 0.05);
+  }
+
+  function bossDefeat() {
+    playTone(392, 523.25, 0.12, "triangle", 0.1, 0);
+    playTone(523.25, 659.25, 0.14, "triangle", 0.1, 0.1);
+    playTone(659.25, 1046.5, 0.28, "sine", 0.11, 0.22);
   }
 
   function crystal() {
@@ -653,6 +691,9 @@ const sfx = (() => {
     startAmbient,
     stopAmbient,
     click,
+    shoot,
+    hitEnemy,
+    bossDefeat,
     crystal,
     powerup,
     shieldBlock,
@@ -792,7 +833,7 @@ function loadSave() {
 
     if (!save.ownedShips.includes(save.selectedShip)) save.selectedShip = 0;
     if (!WORLDS.some(w => w.id === save.selectedWorld && save.best >= w.need)) save.selectedWorld = 0;
-  } catch (e) {
+  } catch (_) {
     save = {...DEFAULT_SAVE, ownedShips:[0], soundEnabled:true, bonuses:{scoreMult:0,magnetLevel:0,shields:0}};
   }
   sfx.setEnabled(save.soundEnabled);
@@ -803,8 +844,6 @@ function saveData() {
 }
 
 loadSave();
-
-const $ = id => document.getElementById(id);
 
 function updateSoundButton() {
   const btn = $("soundToggleButton");
@@ -818,35 +857,26 @@ function updateSoundButton() {
   }
 }
 
-$("soundToggleButton").addEventListener("click", () => {
-  save.soundEnabled = !save.soundEnabled;
-  sfx.setEnabled(save.soundEnabled);
-  saveData();
-  updateSoundButton();
-  if (save.soundEnabled) {
-    sfx.ensureCtx();
-    sfx.click();
-    toast("Звук включён");
-  } else {
-    toast("Звук выключен");
-  }
-});
-
 const screens = [
   "menuScreen","shipsScreen","worldsScreen",
   "shopScreen","statsScreen","casesScreen","inventoryScreen","gameScreen"
 ];
 
 function showScreen(name) {
-  screens.forEach(id => $(id).classList.add("hidden"));
-  $(name).classList.remove("hidden");
-  $("resultModal").classList.add("hidden");
-  $("pauseModal").classList.add("hidden");
+  screens.forEach(id => {
+    const el = $(id);
+    if (el) el.classList.add("hidden");
+  });
+  const target = $(name);
+  if (target) target.classList.remove("hidden");
+  if ($("resultModal")) $("resultModal").classList.add("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   updateUI();
 }
 
 function toast(message) {
   const el = $("toast");
+  if (!el) return;
   el.textContent = message;
   el.style.display = "block";
   clearTimeout(toast.timer);
@@ -873,7 +903,7 @@ function renderBonusesBox() {
 function renderRarityPools() {
   const box = $("rarityPoolsBox");
   if (!box) return;
-  $("totalPrizesCount").textContent = String(CASE_PRIZES.length);
+  if ($("totalPrizesCount")) $("totalPrizesCount").textContent = String(CASE_PRIZES.length);
   box.innerHTML = RARITY_ORDER.map(rarityKey => {
     const r = RARITIES[rarityKey];
     const group = CASE_PRIZES.filter(p => p.rarity === rarityKey);
@@ -888,24 +918,25 @@ function renderRarityPools() {
 }
 
 function updateUI() {
-  $("crystals").textContent = save.crystals;
-  $("shopCrystals").textContent = save.crystals;
-  $("bestScore").textContent = save.best;
-  $("statsBest").textContent = save.best;
-  $("statsEarned").textContent = save.totalEarned;
-  $("statsWorlds").textContent = unlockedWorldCount();
-  $("statsShips").textContent = save.ownedShips.length;
-  $("statsTotalShips").textContent = SHIPS.length;
+  if ($("crystals")) $("crystals").textContent = save.crystals;
+  if ($("shopCrystals")) $("shopCrystals").textContent = save.crystals;
+  if ($("bestScore")) $("bestScore").textContent = save.best;
+  if ($("statsBest")) $("statsBest").textContent = save.best;
+  if ($("statsEarned")) $("statsEarned").textContent = save.totalEarned;
+  if ($("statsWorlds")) $("statsWorlds").textContent = unlockedWorldCount();
+  if ($("statsShips")) $("statsShips").textContent = save.ownedShips.length;
+  if ($("statsTotalShips")) $("statsTotalShips").textContent = SHIPS.length;
   const shipObj = SHIPS.find(s => s.id === save.selectedShip) || SHIPS[0];
-  $("menuShip").textContent = shipObj.emoji || "🚀";
-  $("shardsCount").textContent = save.shards;
-  $("collectorLevel").textContent = save.collectorLevel;
+  if ($("menuShip")) $("menuShip").textContent = shipObj.emoji || "🚀";
+  if ($("shardsCount")) $("shardsCount").textContent = save.shards;
+  if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
   updateSoundButton();
   renderBonusesBox();
 }
 
 function renderShips() {
   const list = $("shipsList");
+  if (!list) return;
   list.innerHTML = "";
 
   SHIPS.forEach(ship => {
@@ -968,6 +999,7 @@ function renderShips() {
 
 function renderWorlds() {
   const list = $("worldsList");
+  if (!list) return;
   list.innerHTML = "";
 
   WORLDS.forEach(world => {
@@ -1127,10 +1159,10 @@ function openCase(box) {
   saveData();
   updateUI();
 
-  $("rouletteTitle").textContent = "Крутим: " + box.name;
-  $("rouletteCaseBadge").textContent = "💎 " + box.price;
+  if ($("rouletteTitle")) $("rouletteTitle").textContent = "Крутим: " + box.name;
+  if ($("rouletteCaseBadge")) $("rouletteCaseBadge").textContent = "💎 " + box.price;
   const resultEl = $("caseResult");
-  resultEl.classList.add("hidden");
+  if (resultEl) resultEl.classList.add("hidden");
 
   const winnerPrize = pickCasePrize(box);
   const { slotWidth, winIndex } = buildRouletteStrip(box, winnerPrize);
@@ -1159,19 +1191,24 @@ function openCase(box) {
     renderShips();
     sfx.winPrize(winnerPrize.rarity);
 
-    resultEl.classList.remove("hidden");
-    resultEl.innerHTML = `
-      <div style="font-size:48px">${winnerPrize.emoji}</div>
-      <h2 style="margin:6px 0">${winnerPrize.name}</h2>
-      ${rarityBadge(winnerPrize.rarity)}
-      <p class="subtitle" style="margin:6px 0">${winnerPrize.desc}</p>
-      <b>${statusMsg}</b>
-      <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Забрать</button>
-    `;
-    $("caseResultClose").addEventListener("click", () => {
-      sfx.click();
-      resultEl.classList.add("hidden");
-    });
+    if (resultEl) {
+      resultEl.classList.remove("hidden");
+      resultEl.innerHTML = `
+        <div style="font-size:48px">${winnerPrize.emoji}</div>
+        <h2 style="margin:6px 0">${winnerPrize.name}</h2>
+        ${rarityBadge(winnerPrize.rarity)}
+        <p class="subtitle" style="margin:6px 0">${winnerPrize.desc}</p>
+        <b>${statusMsg}</b>
+        <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Забрать</button>
+      `;
+      const closeBtn = $("caseResultClose");
+      if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+          sfx.click();
+          resultEl.classList.add("hidden");
+        });
+      }
+    }
 
     toast("🎉 Выпало: " + winnerPrize.name);
     caseSpinning = false;
@@ -1181,6 +1218,7 @@ function openCase(box) {
 
 function renderCases() {
   const list = $("casesList");
+  if (!list) return;
   list.innerHTML = "";
   CASES.forEach(box => {
     const card = document.createElement("div");
@@ -1203,6 +1241,7 @@ function renderCases() {
 
 function renderInventory() {
   const list = $("inventoryList");
+  if (!list) return;
   list.innerHTML = "";
   const items = ITEMS.filter(item => save.ownedItems.includes(item.id));
   if (!items.length) {
@@ -1228,21 +1267,9 @@ function renderInventory() {
     }
     list.appendChild(card);
   });
-  $("shardsCount").textContent = save.shards;
-  $("collectorLevel").textContent = save.collectorLevel;
+  if ($("shardsCount")) $("shardsCount").textContent = save.shards;
+  if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
 }
-
-$("upgradeCollectorButton").addEventListener("click", () => {
-  sfx.ensureCtx();
-  sfx.click();
-  if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
-  if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
-  save.shards -= 30;
-  save.collectorLevel++;
-  saveData(); renderInventory(); updateUI();
-  sfx.winPrize("rare");
-  toast("Сборщик улучшен!");
-});
 
 const ADSGRAM_BLOCK_ID = "60401";
 let adController = null;
@@ -1293,15 +1320,13 @@ async function watchAd() {
   }
 }
 
-$("watchAdButton").addEventListener("click", watchAd);
-$("watchAdMenuButton").addEventListener("click", watchAd);
-
 const canvas = $("gameCanvas");
-const ctx = canvas.getContext("2d");
+const ctx = canvas ? canvas.getContext("2d") : null;
 const swipeHint = $("swipeHint");
 
 const POWERUP_TYPES = [
-  {kind:"shield",emoji:"🛡️",label:"Щит",color:"#48eaff",duration:0},
+  {kind:"weapon",emoji:"🔫",label:"Орудие",color:"#48eaff",duration:8},
+  {kind:"shield",emoji:"🛡️",label:"Щит",color:"#8feaff",duration:0},
   {kind:"magnet",emoji:"🧲",label:"Магнит",color:"#ff79c6",duration:7},
   {kind:"scoreBoost",emoji:"⚡",label:"x2 Очки",color:"#ffe58b",duration:7},
   {kind:"slowMo",emoji:"⏳",label:"Замедление",color:"#8dffc1",duration:5}
@@ -1312,14 +1337,20 @@ let game = {
   paused:false,
   swipeStarted:false,
   score:0,
+  nextBossScore:2000,
+  bossWave:0,
   crystals:0,
   shieldsLeft:0,
+  weaponTimer:0,
+  fireCooldown:0,
   magnetTimer:0,
   scoreBoostTimer:0,
   slowMoTimer:0,
   playerX:0.5,
   playerY:0.75,
   objects:[],
+  bullets:[],
+  boss:null,
   stars:[],
   lastTime:0,
   spawn:0,
@@ -1343,17 +1374,20 @@ function setSwipeHintVisible(visible) {
 }
 
 function updateBuffsHud() {
-  $("runShields").textContent = String(game.shieldsLeft);
+  if ($("runShields")) $("runShields").textContent = String(game.shieldsLeft);
   const el = $("activeBuffs");
   if (!el) return;
   const tags = [];
+  if (game.weaponTimer > 0) tags.push(`🔫 Орудие ${game.weaponTimer.toFixed(1)}с`);
   if (game.magnetTimer > 0) tags.push(`🧲 Магнит ${game.magnetTimer.toFixed(1)}с`);
   if (game.scoreBoostTimer > 0) tags.push(`⚡ x2 Очки ${game.scoreBoostTimer.toFixed(1)}с`);
   if (game.slowMoTimer > 0) tags.push(`⏳ Замедление ${game.slowMoTimer.toFixed(1)}с`);
+  if (game.boss) tags.push(`👾 Босс HP: ${Math.max(0, Math.ceil(game.boss.hp))}/${game.boss.maxHp}`);
   el.innerHTML = tags.map(t => `<span class="buff-tag">${t}</span>`).join("");
 }
 
 function resizeCanvas() {
+  if (!canvas || !ctx) return;
   const rect = canvas.getBoundingClientRect();
   const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -1377,14 +1411,14 @@ function resizeCanvas() {
 }
 
 window.addEventListener("resize", () => {
-  if (!$("gameScreen").classList.contains("hidden")) resizeCanvas();
+  if ($("gameScreen") && !$("gameScreen").classList.contains("hidden")) resizeCanvas();
 });
 
 function startGame() {
   sfx.ensureCtx();
   sfx.click();
-  $("resultModal").classList.add("hidden");
-  $("pauseModal").classList.add("hidden");
+  if ($("resultModal")) $("resultModal").classList.add("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   showScreen("gameScreen");
   resizeCanvas();
 
@@ -1392,21 +1426,27 @@ function startGame() {
   game.paused = false;
   game.swipeStarted = false;
   game.score = 0;
+  game.nextBossScore = 2000;
+  game.bossWave = 0;
   game.crystals = 0;
   game.shieldsLeft = Number(save.bonuses?.shields) || 0;
+  game.weaponTimer = 0;
+  game.fireCooldown = 0;
   game.magnetTimer = 0;
   game.scoreBoostTimer = 0;
   game.slowMoTimer = 0;
   game.playerX = 0.5;
   game.playerY = 0.75;
   game.objects = [];
+  game.bullets = [];
+  game.boss = null;
   game.spawn = 0;
   game.lastTime = performance.now();
 
   setSwipeHintVisible(true);
 
-  $("score").textContent = "0";
-  $("runCrystals").textContent = "0";
+  if ($("score")) $("score").textContent = "0";
+  if ($("runCrystals")) $("runCrystals").textContent = "0";
   updateBuffsHud();
 
   sfx.startAmbient(save.selectedWorld || 0);
@@ -1429,10 +1469,10 @@ function endGame() {
   saveData();
   updateUI();
 
-  $("finalScore").textContent = score;
-  $("finalCrystals").textContent = earned;
-  $("resultTitle").textContent = "Полёт завершён";
-  $("resultModal").classList.remove("hidden");
+  if ($("finalScore")) $("finalScore").textContent = score;
+  if ($("finalCrystals")) $("finalCrystals").textContent = earned;
+  if ($("resultTitle")) $("resultTitle").textContent = "Полёт завершён";
+  if ($("resultModal")) $("resultModal").classList.remove("hidden");
 }
 
 function pauseGame() {
@@ -1440,7 +1480,7 @@ function pauseGame() {
   sfx.click();
   sfx.stopAmbient();
   game.paused = true;
-  $("pauseModal").classList.remove("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.remove("hidden");
 }
 
 function resumeGame() {
@@ -1449,13 +1489,14 @@ function resumeGame() {
   sfx.startAmbient(save.selectedWorld || 0);
   game.paused = false;
   game.lastTime = performance.now();
-  $("pauseModal").classList.add("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   game.animation = requestAnimationFrame(loop);
 }
 
 let canvasPointerActive = false;
 
 function moveToPointer(e) {
+  if (!canvas) return;
   const rect = canvas.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
   if (!game.swipeStarted) {
@@ -1466,26 +1507,33 @@ function moveToPointer(e) {
   game.playerY = Math.max(0.12, Math.min(0.85, (e.clientY - rect.top) / rect.height));
 }
 
-canvas.addEventListener("pointerdown", e => {
-  if (!game.running || game.paused) return;
-  if (e && e.cancelable) e.preventDefault();
-  sfx.ensureCtx();
-  canvasPointerActive = true;
-  if (typeof canvas.setPointerCapture === "function" && e.pointerId !== undefined) {
-    try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
-  }
-  moveToPointer(e);
-});
+function spawnBoss() {
+  game.bossWave++;
+  const maxHp = 36 + (game.bossWave - 1) * 18;
+  game.boss = {
+    x: canvasWidth * 0.5,
+    y: 86,
+    w: 96,
+    h: 42,
+    hp: maxHp,
+    maxHp,
+    vx: (game.bossWave % 2 === 0 ? -1 : 1) * (105 + game.bossWave * 15),
+    shootTimer: 1.1
+  };
+  // Сразу выдаём орудие, чтобы игроку было чем сражаться с боссом
+  game.weaponTimer = Math.max(game.weaponTimer, 9);
+  sfx.powerup();
+  toast(`👾 Появился босс #${game.bossWave}! Стреляй и уворачивайся!`);
+  updateBuffsHud();
+}
 
-canvas.addEventListener("pointermove", e => {
-  if (!canvasPointerActive || !game.running || game.paused) return;
-  if (e && e.cancelable) e.preventDefault();
-  moveToPointer(e);
-});
-
-["pointerup","pointercancel","lostpointercapture"].forEach(event => {
-  canvas.addEventListener(event, () => { canvasPointerActive = false; });
-});
+function fireWeaponShot() {
+  const px = game.playerX * canvasWidth;
+  const py = game.playerY * canvasHeight - 22;
+  game.bullets.push({ x: px - 8, y: py, vy: -520, dmg: 2 });
+  game.bullets.push({ x: px + 8, y: py, vy: -520, dmg: 2 });
+  sfx.shoot();
+}
 
 function spawnPowerup() {
   const p = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
@@ -1504,10 +1552,10 @@ function spawnPowerup() {
 }
 
 function spawnObject() {
-  const difficulty = Math.min(1.8, 1 + game.score / 450);
+  const difficulty = Math.min(1.9, 1 + game.score / 420);
   const roll = Math.random();
 
-  if (roll < 0.24) {
+  if (roll < 0.23) {
     game.objects.push({
       type:"crystal",
       x:Math.random() * Math.max(40, canvasWidth - 50) + 25,
@@ -1518,13 +1566,13 @@ function spawnObject() {
     return;
   }
 
-  if (roll < 0.34) {
+  if (roll < 0.36) {
     spawnPowerup();
     return;
   }
 
   const obstacleRoll = Math.random();
-  if (obstacleRoll < 0.45) {
+  if (obstacleRoll < 0.42) {
     game.objects.push({
       type:"rock",
       x:Math.random() * Math.max(40, canvasWidth - 50) + 25,
@@ -1532,7 +1580,7 @@ function spawnObject() {
       size:17 + Math.random() * 5,
       speed:(175 + Math.random() * 85) * difficulty
     });
-  } else if (obstacleRoll < 0.8) {
+  } else if (obstacleRoll < 0.78) {
     const vx = (Math.random() < 0.5 ? -1 : 1) * (85 + Math.random() * 75 * difficulty);
     game.objects.push({
       type:"driftRock",
@@ -1560,7 +1608,10 @@ function spawnObject() {
 
 function applyPickedPowerup(obj) {
   sfx.powerup();
-  if (obj.kind === "shield") {
+  if (obj.kind === "weapon") {
+    game.weaponTimer = Math.max(game.weaponTimer, obj.duration);
+    toast("🔫 Орудие активировано на 8 сек!");
+  } else if (obj.kind === "shield") {
     game.shieldsLeft++;
     toast("🛡️ Получен энергощит!");
   } else if (obj.kind === "magnet") {
@@ -1578,6 +1629,10 @@ function applyPickedPowerup(obj) {
 
 function updateGame(dt) {
   let buffChanged = false;
+  if (game.weaponTimer > 0) {
+    game.weaponTimer = Math.max(0, game.weaponTimer - dt);
+    buffChanged = true;
+  }
   if (game.magnetTimer > 0) {
     game.magnetTimer = Math.max(0, game.magnetTimer - dt);
     buffChanged = true;
@@ -1590,11 +1645,15 @@ function updateGame(dt) {
     game.slowMoTimer = Math.max(0, game.slowMoTimer - dt);
     buffChanged = true;
   }
-  if (buffChanged) updateBuffsHud();
 
   const baseMult = 1 + (Number(save.bonuses?.scoreMult) || 0);
   const tempMult = game.scoreBoostTimer > 0 ? 2 : 1;
   game.score += dt * (11 + Math.min(14, game.score * 0.015)) * baseMult * tempMult;
+
+  if (!game.boss && game.score >= game.nextBossScore) {
+    game.nextBossScore += 2000;
+    spawnBoss();
+  }
 
   const spawnFactor = game.slowMoTimer > 0 ? 0.55 : 1;
   game.spawn += dt * spawnFactor;
@@ -1608,9 +1667,108 @@ function updateGame(dt) {
     }
   }
 
+  // Автострельба при активном орудии
+  if (game.weaponTimer > 0) {
+    game.fireCooldown -= dt;
+    if (game.fireCooldown <= 0) {
+      game.fireCooldown = 0.24;
+      fireWeaponShot();
+    }
+  }
+
   const timeScale = game.slowMoTimer > 0 ? 0.55 : 1;
   const px = game.playerX * canvasWidth;
   const py = game.playerY * canvasHeight;
+
+  // Обновление пуль
+  for (let b = game.bullets.length - 1; b >= 0; b--) {
+    const bul = game.bullets[b];
+    bul.y += bul.vy * dt;
+    if (bul.y < -20) {
+      game.bullets.splice(b, 1);
+      continue;
+    }
+
+    if (game.boss) {
+      if (
+        Math.abs(bul.x - game.boss.x) < game.boss.w / 2 + 6 &&
+        Math.abs(bul.y - game.boss.y) < game.boss.h / 2 + 8
+      ) {
+        game.boss.hp -= bul.dmg;
+        game.bullets.splice(b, 1);
+        sfx.hitEnemy();
+        buffChanged = true;
+
+        if (game.boss.hp <= 0) {
+          game.boss = null;
+          game.score += 350;
+          game.crystals += 15;
+          if ($("runCrystals")) $("runCrystals").textContent = game.crystals;
+          sfx.bossDefeat();
+          toast("🏆 Босс повержен! +350 очков и +15 💎");
+          buffChanged = true;
+        }
+        continue;
+      }
+    }
+
+    for (let i = game.objects.length - 1; i >= 0; i--) {
+      const obj = game.objects[i];
+      if (obj.type === "rock" || obj.type === "driftRock") {
+        const dist = Math.hypot(bul.x - obj.x, bul.y - obj.y);
+        if (dist < obj.size + 6) {
+          game.objects.splice(i, 1);
+          game.bullets.splice(b, 1);
+          game.score += 20;
+          sfx.hitEnemy();
+          break;
+        }
+      }
+    }
+  }
+
+  // Обновление босса и его атак
+  if (game.boss) {
+    game.boss.x += game.boss.vx * dt * timeScale;
+    const halfW = game.boss.w / 2 + 12;
+    if (game.boss.x < halfW) {
+      game.boss.x = halfW;
+      game.boss.vx = Math.abs(game.boss.vx);
+    } else if (game.boss.x > canvasWidth - halfW) {
+      game.boss.x = canvasWidth - halfW;
+      game.boss.vx = -Math.abs(game.boss.vx);
+    }
+
+    game.boss.shootTimer -= dt * timeScale;
+    if (game.boss.shootTimer <= 0) {
+      game.boss.shootTimer = Math.max(0.85, 1.55 - game.bossWave * 0.1);
+      game.objects.push({
+        type:"rock",
+        x: game.boss.x,
+        y: game.boss.y + game.boss.h / 2 + 10,
+        size: 14,
+        speed: 225 * timeScale
+      });
+    }
+
+    if (
+      Math.abs(px - game.boss.x) < game.boss.w / 2 + 10 &&
+      Math.abs(py - game.boss.y) < game.boss.h / 2 + 10
+    ) {
+      if (game.shieldsLeft > 0) {
+        game.shieldsLeft--;
+        game.playerY = Math.min(0.85, game.playerY + 0.14);
+        sfx.shieldBlock();
+        toast("🛡️ Энергощит спас от босса!");
+        buffChanged = true;
+      } else {
+        endGame();
+        return;
+      }
+    }
+  }
+
+  if (buffChanged) updateBuffsHud();
 
   const permMagLv = Number(save.bonuses?.magnetLevel) || 0;
   const hasTempMag = game.magnetTimer > 0;
@@ -1682,7 +1840,7 @@ function updateGame(dt) {
       if (save.collectorLevel > 0 && Math.random() < save.collectorLevel * 0.12) game.crystals++;
       game.objects.splice(i, 1);
       sfx.crystal();
-      $("runCrystals").textContent = game.crystals;
+      if ($("runCrystals")) $("runCrystals").textContent = game.crystals;
       continue;
     }
 
@@ -1718,10 +1876,11 @@ function updateGame(dt) {
     }
   });
 
-  $("score").textContent = Math.floor(game.score);
+  if ($("score")) $("score").textContent = Math.floor(game.score);
 }
 
 function drawPlayer() {
+  if (!ctx) return;
   const x = game.playerX * canvasWidth;
   const y = game.playerY * canvasHeight;
   const ship = save.selectedShip;
@@ -1739,6 +1898,14 @@ function drawPlayer() {
     ctx.lineWidth = 2.2;
     ctx.beginPath();
     ctx.arc(0, 0, 28, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (game.weaponTimer > 0) {
+    ctx.strokeStyle = "#ffe58b99";
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 32, 0, Math.PI * 2);
     ctx.stroke();
   }
 
@@ -1797,7 +1964,58 @@ function drawPlayer() {
   ctx.restore();
 }
 
+function drawBoss() {
+  if (!ctx || !game.boss) return;
+  const b = game.boss;
+  ctx.save();
+  ctx.translate(b.x, b.y);
+
+  ctx.shadowColor = "#ff3b7f";
+  ctx.shadowBlur = 20;
+  ctx.fillStyle = "#4d1438";
+  ctx.strokeStyle = "#ff7eb3";
+  ctx.lineWidth = 2.5;
+
+  ctx.beginPath();
+  ctx.moveTo(-b.w / 2, -b.h / 2);
+  ctx.lineTo(b.w / 2, -b.h / 2);
+  ctx.lineTo(b.w * 0.36, b.h / 2);
+  ctx.lineTo(-b.w * 0.36, b.h / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#ffe58b";
+  ctx.beginPath();
+  ctx.arc(0, 0, 10, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Полоса HP босса
+  const barW = 84;
+  const barH = 7;
+  const ratio = Math.max(0, Math.min(1, b.hp / b.maxHp));
+  ctx.fillStyle = "#090e24";
+  ctx.fillRect(-barW / 2, -b.h / 2 - 14, barW, barH);
+  ctx.fillStyle = "#ff477e";
+  ctx.fillRect(-barW / 2, -b.h / 2 - 14, barW * ratio, barH);
+
+  ctx.restore();
+}
+
 function drawObjects() {
+  if (!ctx) return;
+
+  // Лазерные выстрелы
+  game.bullets.forEach(bul => {
+    ctx.save();
+    ctx.shadowColor = "#ffe58b";
+    ctx.shadowBlur = 10;
+    ctx.fillStyle = "#ffe58b";
+    ctx.fillRect(bul.x - 2.5, bul.y - 9, 5, 16);
+    ctx.restore();
+  });
+
   game.objects.forEach(obj => {
     ctx.save();
     if (obj.type === "crystal") {
@@ -1861,6 +2079,7 @@ function drawObjects() {
 }
 
 function drawGame() {
+  if (!ctx) return;
   const world = WORLDS[save.selectedWorld] || WORLDS[0];
 
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
@@ -1882,6 +2101,7 @@ function drawGame() {
 
   ctx.globalAlpha = 1;
   drawObjects();
+  drawBoss();
   drawPlayer();
 }
 
@@ -1918,7 +2138,7 @@ function handleAction(action) {
   if (action === "cases") {
     sfx.click();
     renderCases();
-    $("caseResult").classList.add("hidden");
+    if ($("caseResult")) $("caseResult").classList.add("hidden");
     showScreen("casesScreen");
   }
   if (action === "inventory") { sfx.click(); renderInventory(); showScreen("inventoryScreen"); }
@@ -1926,6 +2146,7 @@ function handleAction(action) {
   if (action === "pause") pauseGame();
 }
 
+// Навешиваем все обработчики кнопок и холста
 document.querySelectorAll("[data-action]").forEach(btn => {
   btn.addEventListener("click", () => {
     if (btn.disabled) return;
@@ -1933,17 +2154,77 @@ document.querySelectorAll("[data-action]").forEach(btn => {
   });
 });
 
-$("againButton").addEventListener("click", startGame);
-$("resultHome").addEventListener("click", goHome);
-$("resumeButton").addEventListener("click", resumeGame);
-$("quitButton").addEventListener("click", goHome);
+if ($("soundToggleButton")) {
+  $("soundToggleButton").addEventListener("click", () => {
+    save.soundEnabled = !save.soundEnabled;
+    sfx.setEnabled(save.soundEnabled);
+    saveData();
+    updateSoundButton();
+    if (save.soundEnabled) {
+      sfx.ensureCtx();
+      sfx.click();
+      toast("Звук включён");
+    } else {
+      toast("Звук выключен");
+    }
+  });
+}
+
+if ($("upgradeCollectorButton")) {
+  $("upgradeCollectorButton").addEventListener("click", () => {
+    sfx.ensureCtx();
+    sfx.click();
+    if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
+    if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
+    save.shards -= 30;
+    save.collectorLevel++;
+    saveData(); renderInventory(); updateUI();
+    sfx.winPrize("rare");
+    toast("Сборщик улучшен!");
+  });
+}
+
+if ($("watchAdButton")) $("watchAdButton").addEventListener("click", watchAd);
+if ($("watchAdMenuButton")) $("watchAdMenuButton").addEventListener("click", watchAd);
+
+if (canvas) {
+  canvas.addEventListener("pointerdown", e => {
+    if (!game.running || game.paused) return;
+    if (e && e.cancelable) e.preventDefault();
+    sfx.ensureCtx();
+    canvasPointerActive = true;
+    if (typeof canvas.setPointerCapture === "function" && e.pointerId !== undefined) {
+      try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+    }
+    moveToPointer(e);
+    if (game.weaponTimer > 0 && game.fireCooldown <= 0) {
+      game.fireCooldown = 0.2;
+      fireWeaponShot();
+    }
+  });
+
+  canvas.addEventListener("pointermove", e => {
+    if (!canvasPointerActive || !game.running || game.paused) return;
+    if (e && e.cancelable) e.preventDefault();
+    moveToPointer(e);
+  });
+
+  ["pointerup","pointercancel","lostpointercapture"].forEach(event => {
+    canvas.addEventListener(event, () => { canvasPointerActive = false; });
+  });
+}
+
+if ($("againButton")) $("againButton").addEventListener("click", startGame);
+if ($("resultHome")) $("resultHome").addEventListener("click", goHome);
+if ($("resumeButton")) $("resumeButton").addEventListener("click", resumeGame);
+if ($("quitButton")) $("quitButton").addEventListener("click", goHome);
 
 updateUI();
 renderShips();
 renderWorlds();
 renderCases();
 renderInventory();
-})();
+});
 </script>
 </body>
 </html>
