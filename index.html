@@ -6,9 +6,6 @@
 <meta name="theme-color" content="#080b1b">
 <title>RIFT RUNNER</title>
 
-<script src="https://telegram.org/js/telegram-web-app.js" async></script>
-<script src="https://sad.adsgram.ai/js/sad.min.js" async></script>
-
 <style>
 :root {
   --bg:#080b1b;
@@ -37,6 +34,7 @@ button {
   font-weight:bold;
   cursor:pointer;
   touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
 }
 button:disabled {opacity:.5;cursor:default}
 #app {max-width:520px;margin:auto;padding:16px;min-height:100vh}
@@ -420,7 +418,7 @@ h2 {font-size:22px;margin:8px 0 16px}
   <p class="subtitle" style="text-align:center">Управляй кораблём в четырёх направлениях, уклоняйся от препятствий и собирай кристаллы.</p>
 </section>
 
-<div class="footer">RIFT RUNNER · версия 4.4</div>
+<div class="footer">RIFT RUNNER · версия 4.5</div>
 </div>
 
 <div id="toast"></div>
@@ -445,18 +443,19 @@ h2 {font-size:22px;margin:8px 0 16px}
   </div>
 </div>
 
+<script src="https://telegram.org/js/telegram-web-app.js" defer></script>
 <script>
-(() => {
+window.addEventListener("DOMContentLoaded", () => {
 "use strict";
 
-const tg = window.Telegram?.WebApp;
+const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 if (tg) {
   try { tg.ready(); } catch (e) {}
   try { tg.expand(); } catch (e) {}
   try { tg.setHeaderColor("#080b1b"); } catch (e) {}
 }
 
-/* ЗВУКОВОЙ ДВИЖОК + КОСМИЧЕСКИЙ ЭМБИЕНТ (Web Audio API — без внешних файлов) */
+/* ЗВУКОВОЙ ДВИЖОК + КОСМИЧЕСКИЙ ЭМБИЕНТ (Web Audio API) */
 const sfx = (() => {
   let ctx = null;
   let enabled = true;
@@ -469,12 +468,8 @@ const sfx = (() => {
     if (!enabled) return null;
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return null;
-    if (!ctx) {
-      ctx = new AudioCtx();
-    }
-    if (ctx.state === "suspended") {
-      ctx.resume().catch(() => {});
-    }
+    if (!ctx) ctx = new AudioCtx();
+    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     return ctx;
   }
 
@@ -566,10 +561,6 @@ const sfx = (() => {
     }
   }
 
-  function isEnabled() {
-    return enabled;
-  }
-
   function click() {
     playTone(520, 680, 0.055, "triangle", 0.05);
   }
@@ -595,7 +586,6 @@ const sfx = (() => {
     if (!enabled) return;
     const start = performance.now();
     let step = 0;
-
     const scheduleNext = () => {
       if (!enabled) return;
       const elapsed = performance.now() - start;
@@ -607,7 +597,6 @@ const sfx = (() => {
       step++;
       tickTimer = setTimeout(scheduleNext, interval);
     };
-
     scheduleNext();
   }
 
@@ -634,7 +623,6 @@ const sfx = (() => {
   return {
     ensureCtx,
     setEnabled,
-    isEnabled,
     startAmbient,
     stopAmbient,
     click,
@@ -778,12 +766,8 @@ function loadSave() {
     save.selectedShip = Number(save.selectedShip) || 0;
     save.selectedWorld = Number(save.selectedWorld) || 0;
 
-    if (!save.ownedShips.includes(save.selectedShip)) {
-      save.selectedShip = 0;
-    }
-    if (!WORLDS.some(w => w.id === save.selectedWorld && save.best >= w.need)) {
-      save.selectedWorld = 0;
-    }
+    if (!save.ownedShips.includes(save.selectedShip)) save.selectedShip = 0;
+    if (!WORLDS.some(w => w.id === save.selectedWorld && save.best >= w.need)) save.selectedWorld = 0;
   } catch (e) {
     save = {...DEFAULT_SAVE, ownedShips:[0], soundEnabled:true, bonuses:{scoreMult:0,magnetLevel:0,shields:0}};
   }
@@ -793,14 +777,27 @@ function loadSave() {
 function saveData() {
   try {
     localStorage.setItem("riftRunnerSave", JSON.stringify(save));
-  } catch (e) {
-    console.warn("Не удалось сохранить прогресс", e);
-  }
+  } catch (e) {}
 }
 
 loadSave();
 
 const $ = id => document.getElementById(id);
+
+function bindButton(el, handler) {
+  if (!el) return;
+  let lastTap = 0;
+  const invoke = e => {
+    if (el.disabled) return;
+    if (e && e.type === "pointerdown" && e.button !== undefined && e.button !== 0) return;
+    const now = performance.now();
+    if (now - lastTap < 220) return;
+    lastTap = now;
+    handler(e);
+  };
+  el.addEventListener("pointerdown", invoke);
+  el.addEventListener("click", invoke);
+}
 
 function updateSoundButton() {
   const btn = $("soundToggleButton");
@@ -814,22 +811,19 @@ function updateSoundButton() {
   }
 }
 
-const soundBtn = $("soundToggleButton");
-if (soundBtn) {
-  soundBtn.addEventListener("click", () => {
-    save.soundEnabled = !save.soundEnabled;
-    sfx.setEnabled(save.soundEnabled);
-    saveData();
-    updateSoundButton();
-    if (save.soundEnabled) {
-      sfx.ensureCtx();
-      sfx.click();
-      toast("Звук включён");
-    } else {
-      toast("Звук выключен");
-    }
-  });
-}
+bindButton($("soundToggleButton"), () => {
+  save.soundEnabled = !save.soundEnabled;
+  sfx.setEnabled(save.soundEnabled);
+  saveData();
+  updateSoundButton();
+  if (save.soundEnabled) {
+    sfx.ensureCtx();
+    sfx.click();
+    toast("Звук включён");
+  } else {
+    toast("Звук выключен");
+  }
+});
 
 const screens = [
   "menuScreen","shipsScreen","worldsScreen",
@@ -843,10 +837,8 @@ function showScreen(name) {
   });
   const target = $(name);
   if (target) target.classList.remove("hidden");
-  const resultModal = $("resultModal");
-  const pauseModal = $("pauseModal");
-  if (resultModal) resultModal.classList.add("hidden");
-  if (pauseModal) pauseModal.classList.add("hidden");
+  if ($("resultModal")) $("resultModal").classList.add("hidden");
+  if ($("pauseModal")) $("pauseModal").classList.add("hidden");
   updateUI();
 }
 
@@ -939,7 +931,7 @@ function renderShips() {
       <button class="secondary" type="button" style="width:100%">${btnText}</button>
     `;
 
-    card.querySelector("button").addEventListener("click", () => {
+    bindButton(card.querySelector("button"), () => {
       sfx.click();
       if (owned) {
         save.selectedShip = ship.id;
@@ -998,7 +990,7 @@ function renderWorlds() {
       </button>
     `;
 
-    card.querySelector("button").addEventListener("click", () => {
+    bindButton(card.querySelector("button"), () => {
       if (!unlocked) return;
       sfx.click();
       save.selectedWorld = world.id;
@@ -1033,9 +1025,7 @@ function pickRarity(weights) {
 function pickCasePrize(box) {
   const chosenRarity = pickRarity(box.weights);
   const pool = CASE_PRIZES.filter(p => p.rarity === chosenRarity);
-  if (pool.length) {
-    return pool[Math.floor(Math.random() * pool.length)];
-  }
+  if (pool.length) return pool[Math.floor(Math.random() * pool.length)];
   return CASE_PRIZES[Math.floor(Math.random() * CASE_PRIZES.length)];
 }
 
@@ -1117,7 +1107,7 @@ function buildRouletteStrip(box, winnerPrize) {
 
   const firstSlot = track.querySelector(".roulette-slot");
   const slotRect = firstSlot ? firstSlot.getBoundingClientRect() : { width: 92 };
-  const slotWidth = slotRect.width + 10;
+  const slotWidth = (slotRect.width || 92) + 10;
   return { slotWidth, winIndex };
 }
 
@@ -1189,13 +1179,10 @@ function openCase(box) {
         <b>${statusMsg}</b>
         <button class="secondary" type="button" style="margin-top:12px" id="caseResultClose">Забрать</button>
       `;
-      const closeBtn = $("caseResultClose");
-      if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-          sfx.click();
-          resultEl.classList.add("hidden");
-        });
-      }
+      bindButton($("caseResultClose"), () => {
+        sfx.click();
+        resultEl.classList.add("hidden");
+      });
     }
 
     toast("🎉 Выпало: " + winnerPrize.name);
@@ -1220,7 +1207,7 @@ function renderCases() {
       <div class="pill">💎 ${box.price}</div>
       <button class="primary" type="button" style="margin-top:10px" ${caseSpinning ? "disabled" : ""}>Крутить</button>
     `;
-    card.querySelector("button").addEventListener("click", () => openCase(box));
+    bindButton(card.querySelector("button"), () => openCase(box));
     list.appendChild(card);
   });
   renderBonusesBox();
@@ -1245,7 +1232,7 @@ function renderInventory() {
       <button class="secondary" type="button" style="width:100%" ${item.type === "upgrade" ? "disabled" : ""}>
       ${item.type === "upgrade" ? "Улучшение" : equipped ? "Используется" : "Экипировать"}</button>`;
     if (item.type !== "upgrade") {
-      card.querySelector("button").addEventListener("click", () => {
+      bindButton(card.querySelector("button"), () => {
         sfx.click();
         if (item.type === "skin") save.equippedSkin = item.id;
         if (item.type === "trail") save.equippedTrail = item.id;
@@ -1258,20 +1245,18 @@ function renderInventory() {
   if ($("collectorLevel")) $("collectorLevel").textContent = save.collectorLevel;
 }
 
-const upgradeBtn = $("upgradeCollectorButton");
-if (upgradeBtn) {
-  upgradeBtn.addEventListener("click", () => {
-    sfx.click();
-    if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
-    if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
-    save.shards -= 30;
-    save.collectorLevel++;
-    saveData(); renderInventory(); updateUI();
-    sfx.winPrize("rare");
-    toast("Сборщик улучшен!");
-  });
-}
+bindButton($("upgradeCollectorButton"), () => {
+  sfx.click();
+  if (save.collectorLevel >= 3) { toast("Сборщик уже максимального уровня"); return; }
+  if (save.shards < 30) { toast("Нужно 30 осколков"); return; }
+  save.shards -= 30;
+  save.collectorLevel++;
+  saveData(); renderInventory(); updateUI();
+  sfx.winPrize("rare");
+  toast("Сборщик улучшен!");
+});
 
+/* ADSGRAM REWARD */
 const ADSGRAM_BLOCK_ID = "60401";
 let adController = null;
 let adBusy = false;
@@ -1279,22 +1264,13 @@ let sdkPromise = null;
 
 function loadAdsgram() {
   if (window.Adsgram) return Promise.resolve(window.Adsgram);
-
   if (!sdkPromise) {
     sdkPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[data-adsgram="1"]');
-      if (existing) {
-        existing.addEventListener("load", () => resolve(window.Adsgram), {once:true});
-        existing.addEventListener("error", reject, {once:true});
-        if (window.Adsgram) resolve(window.Adsgram);
-        return;
-      }
       const script = document.createElement("script");
       script.src = "https://sad.adsgram.ai/js/sad.min.js";
       script.async = true;
-      script.dataset.adsgram = "1";
       script.onload = () => window.Adsgram ? resolve(window.Adsgram) : reject(new Error("SDK не найден"));
-      script.onerror = () => reject(new Error("Не удалось загрузить SDK"));
+      script.onerror = () => { sdkPromise = null; reject(new Error("Не удалось загрузить SDK")); };
       document.head.appendChild(script);
     });
   }
@@ -1332,7 +1308,6 @@ async function watchAd() {
       toast("Просмотр не завершён — награды нет");
     }
   } catch (error) {
-    console.warn("AdsGram:", error);
     statuses.forEach(status => { status.textContent = "Реклама сейчас недоступна. Попробуй позже."; });
     toast("Не удалось показать рекламу");
   } finally {
@@ -1341,9 +1316,10 @@ async function watchAd() {
   }
 }
 
-if ($("watchAdButton")) $("watchAdButton").addEventListener("click", watchAd);
-if ($("watchAdMenuButton")) $("watchAdMenuButton").addEventListener("click", watchAd);
+bindButton($("watchAdButton"), watchAd);
+bindButton($("watchAdMenuButton"), watchAd);
 
+/* ИГРА */
 const canvas = $("gameCanvas");
 const ctx = canvas ? canvas.getContext("2d") : null;
 
@@ -1467,14 +1443,12 @@ function resumeGame() {
   game.animation = requestAnimationFrame(loop);
 }
 
-const controlButtons = [
+[
   ["leftButton","left"],
   ["rightButton","right"],
   ["upButton","up"],
   ["downButton","down"]
-];
-
-controlButtons.forEach(([id, direction]) => {
+].forEach(([id, direction]) => {
   const button = $(id);
   if (!button) return;
   const press = e => {
@@ -1485,9 +1459,7 @@ controlButtons.forEach(([id, direction]) => {
       try { button.setPointerCapture(e.pointerId); } catch (_) {}
     }
   };
-  const release = () => {
-    game.keys[direction] = false;
-  };
+  const release = () => { game.keys[direction] = false; };
 
   button.addEventListener("pointerdown", press);
   button.addEventListener("pointerup", release);
@@ -1803,39 +1775,21 @@ function handleAction(action) {
   if (action === "pause") pauseGame();
 }
 
-let lastActionTime = 0;
-function triggerAction(action) {
-  if (!action) return;
-  const now = performance.now();
-  if (now - lastActionTime < 180) return;
-  lastActionTime = now;
-  handleAction(action);
-}
-
-document.addEventListener("click", e => {
-  const button = e.target.closest("[data-action]");
-  if (!button || button.disabled) return;
-  triggerAction(button.dataset.action);
+document.querySelectorAll("[data-action]").forEach(btn => {
+  bindButton(btn, () => handleAction(btn.dataset.action));
 });
 
-document.addEventListener("touchend", e => {
-  const button = e.target.closest("[data-action]");
-  if (!button || button.disabled) return;
-  if (e && e.cancelable) e.preventDefault();
-  triggerAction(button.dataset.action);
-}, {passive:false});
-
-if ($("againButton")) $("againButton").addEventListener("click", startGame);
-if ($("resultHome")) $("resultHome").addEventListener("click", goHome);
-if ($("resumeButton")) $("resumeButton").addEventListener("click", resumeGame);
-if ($("quitButton")) $("quitButton").addEventListener("click", goHome);
+bindButton($("againButton"), startGame);
+bindButton($("resultHome"), goHome);
+bindButton($("resumeButton"), resumeGame);
+bindButton($("quitButton"), goHome);
 
 updateUI();
 renderShips();
 renderWorlds();
 renderCases();
 renderInventory();
-})();
+});
 </script>
 </body>
 </html>
