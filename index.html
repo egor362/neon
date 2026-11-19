@@ -435,7 +435,7 @@ h2 {font-size:22px;margin:8px 0 16px}
   <p class="subtitle" style="text-align:center;margin-top:10px">Ведите пальцем для управления, подбирайте 🔫 орудие для стрельбы и побеждайте боссов каждые 2000 очков.</p>
 </section>
 
-<div class="footer">RIFT RUNNER · версия 4.7</div>
+<div class="footer">RIFT RUNNER · версия 4.8</div>
 </div>
 
 <div id="toast"></div>
@@ -461,14 +461,16 @@ h2 {font-size:22px;margin:8px 0 16px}
 </div>
 
 <script>
-window.addEventListener("DOMContentLoaded", () => {
+(() => {
 "use strict";
 
-const $ = id => document.getElementById(id);
+function $(id) {
+  return document.getElementById(id);
+}
 
 function loadScript(src) {
   return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${src}"]`);
+    const existing = document.querySelector('script[src="' + src + '"]');
     if (existing) {
       if (window.Adsgram) return resolve();
       existing.addEventListener("load", () => resolve(), {once:true});
@@ -1512,15 +1514,15 @@ function spawnBoss() {
   const maxHp = 36 + (game.bossWave - 1) * 18;
   game.boss = {
     x: canvasWidth * 0.5,
-    y: 86,
-    w: 96,
-    h: 42,
+    y: 88,
+    w: 104,
+    h: 46,
     hp: maxHp,
     maxHp,
     vx: (game.bossWave % 2 === 0 ? -1 : 1) * (105 + game.bossWave * 15),
-    shootTimer: 1.1
+    shootTimer: 1.1,
+    hitFlash: 0
   };
-  // Сразу выдаём орудие, чтобы игроку было чем сражаться с боссом
   game.weaponTimer = Math.max(game.weaponTimer, 9);
   sfx.powerup();
   toast(`👾 Появился босс #${game.bossWave}! Стреляй и уворачивайся!`);
@@ -1667,7 +1669,6 @@ function updateGame(dt) {
     }
   }
 
-  // Автострельба при активном орудии
   if (game.weaponTimer > 0) {
     game.fireCooldown -= dt;
     if (game.fireCooldown <= 0) {
@@ -1680,7 +1681,6 @@ function updateGame(dt) {
   const px = game.playerX * canvasWidth;
   const py = game.playerY * canvasHeight;
 
-  // Обновление пуль
   for (let b = game.bullets.length - 1; b >= 0; b--) {
     const bul = game.bullets[b];
     bul.y += bul.vy * dt;
@@ -1695,6 +1695,7 @@ function updateGame(dt) {
         Math.abs(bul.y - game.boss.y) < game.boss.h / 2 + 8
       ) {
         game.boss.hp -= bul.dmg;
+        game.boss.hitFlash = 0.08;
         game.bullets.splice(b, 1);
         sfx.hitEnemy();
         buffChanged = true;
@@ -1727,8 +1728,10 @@ function updateGame(dt) {
     }
   }
 
-  // Обновление босса и его атак
   if (game.boss) {
+    if (game.boss.hitFlash > 0) {
+      game.boss.hitFlash = Math.max(0, game.boss.hitFlash - dt);
+    }
     game.boss.x += game.boss.vx * dt * timeScale;
     const halfW = game.boss.w / 2 + 12;
     if (game.boss.x < halfW) {
@@ -1967,38 +1970,72 @@ function drawPlayer() {
 function drawBoss() {
   if (!ctx || !game.boss) return;
   const b = game.boss;
+  const flashing = b.hitFlash > 0;
+  const accent = flashing ? "#ffffff" : (game.bossWave % 2 === 0 ? "#a879ff" : "#ff7eb3");
+  const hullFill = flashing ? "#7a2c5d" : (game.bossWave % 2 === 0 ? "#24164a" : "#4d1438");
+
   ctx.save();
   ctx.translate(b.x, b.y);
 
-  ctx.shadowColor = "#ff3b7f";
-  ctx.shadowBlur = 20;
-  ctx.fillStyle = "#4d1438";
-  ctx.strokeStyle = "#ff7eb3";
-  ctx.lineWidth = 2.5;
+  ctx.shadowColor = accent;
+  ctx.shadowBlur = 18;
+  ctx.fillStyle = hullFill;
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.moveTo(-b.w * 0.44, -6);
+  ctx.lineTo(-b.w * 0.64, 10);
+  ctx.lineTo(-b.w * 0.36, 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(b.w * 0.44, -6);
+  ctx.lineTo(b.w * 0.64, 10);
+  ctx.lineTo(b.w * 0.36, 16);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
 
   ctx.beginPath();
   ctx.moveTo(-b.w / 2, -b.h / 2);
   ctx.lineTo(b.w / 2, -b.h / 2);
   ctx.lineTo(b.w * 0.36, b.h / 2);
+  ctx.lineTo(0, b.h * 0.66);
   ctx.lineTo(-b.w * 0.36, b.h / 2);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = "#ffe58b";
+  ctx.fillStyle = accent;
+  ctx.fillRect(-26, b.h / 2 - 2, 8, 9);
+  ctx.fillRect(18, b.h / 2 - 2, 8, 9);
+
+  ctx.shadowColor = "#ffe58b";
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = flashing ? "#ffffff" : "#ffe58b";
   ctx.beginPath();
-  ctx.arc(0, 0, 10, 0, Math.PI * 2);
+  ctx.arc(0, 0, 11, 0, Math.PI * 2);
   ctx.fill();
 
-  // Полоса HP босса
-  const barW = 84;
+  ctx.fillStyle = "#ff477e";
+  ctx.beginPath();
+  ctx.arc(0, 0, 4.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  const barW = 92;
   const barH = 7;
   const ratio = Math.max(0, Math.min(1, b.hp / b.maxHp));
+  ctx.shadowBlur = 0;
   ctx.fillStyle = "#090e24";
-  ctx.fillRect(-barW / 2, -b.h / 2 - 14, barW, barH);
-  ctx.fillStyle = "#ff477e";
-  ctx.fillRect(-barW / 2, -b.h / 2 - 14, barW * ratio, barH);
+  ctx.fillRect(-barW / 2, -b.h / 2 - 15, barW, barH);
+  ctx.fillStyle = accent;
+  ctx.fillRect(-barW / 2, -b.h / 2 - 15, barW * ratio, barH);
+  ctx.strokeStyle = "#ffffff55";
+  ctx.lineWidth = 1;
+  ctx.strokeRect(-barW / 2, -b.h / 2 - 15, barW, barH);
 
   ctx.restore();
 }
@@ -2006,7 +2043,6 @@ function drawBoss() {
 function drawObjects() {
   if (!ctx) return;
 
-  // Лазерные выстрелы
   game.bullets.forEach(bul => {
     ctx.save();
     ctx.shadowColor = "#ffe58b";
@@ -2146,12 +2182,10 @@ function handleAction(action) {
   if (action === "pause") pauseGame();
 }
 
-// Навешиваем все обработчики кнопок и холста
-document.querySelectorAll("[data-action]").forEach(btn => {
-  btn.addEventListener("click", () => {
-    if (btn.disabled) return;
-    handleAction(btn.dataset.action);
-  });
+document.addEventListener("click", e => {
+  const actionBtn = e.target && e.target.closest ? e.target.closest("[data-action]") : null;
+  if (!actionBtn || actionBtn.disabled) return;
+  handleAction(actionBtn.dataset.action);
 });
 
 if ($("soundToggleButton")) {
@@ -2224,7 +2258,7 @@ renderShips();
 renderWorlds();
 renderCases();
 renderInventory();
-});
+})();
 </script>
 </body>
 </html>
