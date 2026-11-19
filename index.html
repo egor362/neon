@@ -1261,5 +1261,16 @@ document.addEventListener("click", e => {
 $("againButton").addEventListener("click", startGame);
 $("resultHome").addEventListener("click", goHome);
 $("resumeB
-
+$("resumeButton").addEventListener("click", resumeGame);
+$("quitButton").addEventListener("click", goHome);
+/* ПЕРВОНАЧАЛЬНАЯ ЗАГРУЗКА */
+updateUI();
+renderShips();
+renderWorlds();
+renderCases();
+renderInventory();
+})();
+</script>
+</body>
+</html>
  
